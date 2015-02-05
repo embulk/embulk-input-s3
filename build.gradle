@@ -1,0 +1,39 @@
+//buildscript {
+//    repositories {
+//        mavenCentral()
+//        jcenter()
+//        maven { url 'http://repo.spring.io/plugins-release' }
+//    }
+//    dependencies {
+//        classpath 'org.springframework.build.gradle:propdeps-plugin:0.0.7'
+//        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.0'
+//    }
+//}
+//apply plugin: 'com.jfrog.bintray'
+//apply plugin: 'java'
+
+plugins {
+    id 'com.jfrog.bintray' version '1.0'
+    id 'java'
+}
+
+configurations {
+    provided.extendsFrom(compile)
+}
+
+repositories {
+    mavenCentral()
+    jcenter()
+    maven { url 'http://dl.bintray.com/embulk/maven' }
+}
+
+dependencies {
+    //provided 'org.embulk:embulk-core:0.3.2'
+    compile 'org.embulk:embulk-core:0.3.2'
+    compile 'com.amazonaws:aws-java-sdk:1.9.17'
+}
+
+task copyDependencies(type:Copy) {
+    from (configurations.runtime - configurations.compile)
+    into "classpath"
+}
