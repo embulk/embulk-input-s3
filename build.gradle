@@ -22,7 +22,7 @@ dependencies {
 
 task classpath(type: Copy) {
     doFirst { new File("classpath").deleteDir() }
-    from (configurations.runtime - configurations.provided)
+    from (configurations.runtime - configurations.provided + files(jar.archivePath))
     into "classpath"
 }
 

@@ -1,6 +1,35 @@
 package org.embulk.plugin.s3;
 
 import java.util.List;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.Files;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.FileVisitResult;
+import java.nio.file.attribute.BasicFileAttributes;
+import javax.validation.constraints.NotNull;
+import com.google.common.collect.ImmutableList;
+import com.fasterxml.jackson.annotation.JacksonInject;
+import org.embulk.config.Config;
+import org.embulk.config.Task;
+import org.embulk.config.TaskSource;
+import org.embulk.config.ConfigSource;
+import org.embulk.config.NextConfig;
+import org.embulk.config.CommitReport;
+import org.embulk.spi.BufferAllocator;
+import org.embulk.spi.Exec;
+import org.embulk.spi.FileInputPlugin;
+import org.embulk.spi.TransactionalFileInput;
+import org.embulk.spi.util.InputStreamFileInput;
+import org.slf4j.Logger;
+
+import static org.embulk.spi.util.Inputs.formatPath;
+
+import java.util.List;
 import java.io.IOException;
 import java.io.InputStream;
 import com.google.common.collect.ImmutableList;
