@@ -71,11 +71,12 @@ public class S3FileInputPlugin
         @Config("path_prefix")
         public String getPathPrefix();
 
-        @Config("path_prefix")
+        @Config("last_path")
         @ConfigDefault("null")
         public Optional<String> getLastPath();
 
         @Config("endpoint")
+        @ConfigDefault("null")
         public Optional<String> getEndpoint();
 
         // TODO timeout, ssl, etc
