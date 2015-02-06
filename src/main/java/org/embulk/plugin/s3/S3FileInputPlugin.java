@@ -18,6 +18,7 @@ import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.Protocol;
 import org.embulk.config.Config;
+import org.embulk.config.ConfigDefault;
 import org.embulk.config.Task;
 import org.embulk.config.TaskSource;
 import org.embulk.config.ConfigSource;
@@ -38,8 +39,12 @@ public class S3FileInputPlugin
         @Config("bucket")
         public String getBucket();
 
-        @Config("paths")
-        public List<String> getPathPrefixes();
+        @Config("path_prefix")
+        public String getPathPrefix();
+
+        @Config("path_prefix")
+        @ConfigDefault("null")
+        public Optional<String> getLastPath();
 
         @Config("endpoint")
         public Optional<String> getEndpoint();
@@ -87,6 +92,7 @@ public class S3FileInputPlugin
             int processorCount,
             List<CommitReport> successCommitReports)
     {
+        // do nothing
     }
 
     public static AWSCredentialsProvider getCredentialsProvider(PluginTask task)
@@ -136,13 +142,7 @@ public class S3FileInputPlugin
         AmazonS3Client client = newS3Client(task);
         String bucketName = task.getBucket();
 
-        ImmutableList.Builder<String> builder = ImmutableList.builder();
-        for (String prefix : task.getPathPrefixes()) {
-            // TODO format path using timestamp
-            builder.addAll(listS3FilesByPrefix(client, bucketName, prefix));
-        }
-
-        return builder.build();
+        return listS3FilesByPrefix(client, bucketName, task.getPathPrefix(), task.getLastPath());
     }
 
     /**
@@ -150,11 +150,12 @@ public class S3FileInputPlugin
      *
      * The resulting list does not include the file that's size == 0.
      */
-    public static List<String> listS3FilesByPrefix(AmazonS3Client client, String bucketName, String prefix)
+    public static List<String> listS3FilesByPrefix(AmazonS3Client client, String bucketName,
+            String prefix, Optional<String> lastPath)
     {
         ImmutableList.Builder<String> builder = ImmutableList.builder();
 
-        String lastKey = null;
+        String lastKey = lastPath.orNull();
         do {
             ListObjectsRequest req = new ListObjectsRequest(bucketName, prefix, lastKey, null, 1024);
             ObjectListing ol = client.listObjects(req);

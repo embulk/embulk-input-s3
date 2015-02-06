@@ -1,39 +1,57 @@
-//buildscript {
-//    repositories {
-//        mavenCentral()
-//        jcenter()
-//        maven { url 'http://repo.spring.io/plugins-release' }
-//    }
-//    dependencies {
-//        classpath 'org.springframework.build.gradle:propdeps-plugin:0.0.7'
-//        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.0'
-//    }
-//}
-//apply plugin: 'com.jfrog.bintray'
-//apply plugin: 'java'
-
 plugins {
-    id 'com.jfrog.bintray' version '1.0'
-    id 'java'
+    id "com.jfrog.bintray" version "1.0"
+    id "com.github.jruby-gradle.base" version "0.1.5"
+    id "java"
 }
-
-configurations {
-    provided.extendsFrom(compile)
-}
-
+import com.github.jrubygradle.JRubyExec
 repositories {
     mavenCentral()
     jcenter()
-    maven { url 'http://dl.bintray.com/embulk/maven' }
 }
+configurations {
+    provided
+}
+
+version = "0.1.0"
 
 dependencies {
-    //provided 'org.embulk:embulk-core:0.3.2'
-    compile 'org.embulk:embulk-core:0.3.2'
-    compile 'com.amazonaws:aws-java-sdk:1.9.17'
+    compile  "org.embulk:embulk-core:0.3.2"
+    provided "org.embulk:embulk-core:0.3.2"
+    compile "com.amazonaws:aws-java-sdk-s3:1.9.17"
 }
 
-task copyDependencies(type:Copy) {
-    from (configurations.runtime - configurations.compile)
+task classpath(type: Copy) {
+    doFirst { new File("classpath").deleteDir() }
+    from (configurations.runtime - configurations.provided)
     into "classpath"
+}
+
+task gem(type: JRubyExec, dependsOn: ["build", "gemspec", "classpath"]) {
+    jrubyArgs "-rrubygems/gem_runner", "-eGem::GemRunner.new.run(ARGV)", "build"
+    script "build/gemspec"
+}
+
+task gemspec << { new File("build/gemspec").write($/
+Gem::Specification.new do |gem|
+  gem.summary       = "S3 file input plugin for Embulk, a plugin-based parallel bulk data loader"
+
+  gem.name          = "${project.name}"
+  gem.version       = "${project.version}"
+  gem.description   = gem.summary
+  gem.authors       = ["Sadayuki Furuhashi"]
+  gem.email         = ["frsyuki@gmail.com"]
+  gem.license       = "Apache 2.0"
+  gem.homepage      = "https://github.com/embulk/embulk-plugin-s3"
+
+  gem.files         = `git ls-files`.split("\n") + Dir["classpath/*.jar"]
+  gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})
+  gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
+  gem.require_paths = ["lib"]
+  gem.has_rdoc      = false
+
+  gem.add_development_dependency "bundler", [">= 1.0"]
+  gem.add_development_dependency "rake", [">= 0.10.0"]
+  gem.add_development_dependency "test-unit", ["~> 3.0.2"]
+end
+/$)
 }
