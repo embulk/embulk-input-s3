@@ -18,7 +18,7 @@ import org.embulk.config.Config;
 import org.embulk.config.Task;
 import org.embulk.config.TaskSource;
 import org.embulk.config.ConfigSource;
-import org.embulk.config.NextConfig;
+import org.embulk.config.ConfigDiff;
 import org.embulk.config.CommitReport;
 import org.embulk.spi.BufferAllocator;
 import org.embulk.spi.Exec;
@@ -51,7 +51,7 @@ import org.embulk.config.ConfigDefault;
 import org.embulk.config.Task;
 import org.embulk.config.TaskSource;
 import org.embulk.config.ConfigSource;
-import org.embulk.config.NextConfig;
+import org.embulk.config.ConfigDiff;
 import org.embulk.config.CommitReport;
 import org.embulk.spi.BufferAllocator;
 import org.embulk.spi.Exec;
@@ -97,7 +97,7 @@ public class S3FileInputPlugin
     }
 
     @Override
-    public NextConfig transaction(ConfigSource config, FileInputPlugin.Control control)
+    public ConfigDiff transaction(ConfigSource config, FileInputPlugin.Control control)
     {
         PluginTask task = config.loadConfig(PluginTask.class);
 
@@ -109,7 +109,7 @@ public class S3FileInputPlugin
     }
 
     @Override
-    public NextConfig resume(TaskSource taskSource,
+    public ConfigDiff resume(TaskSource taskSource,
             int processorCount,
             FileInputPlugin.Control control)
     {
