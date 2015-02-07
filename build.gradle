@@ -23,7 +23,7 @@ dependencies {
 }
 
 task classpath(type: Copy) {
-    doFirst { new File("classpath").deleteDir() }
+    doFirst { file("classpath").deleteDir() }
     from (configurations.runtime - configurations.provided + files(jar.archivePath))
     into "classpath"
 }
@@ -31,9 +31,10 @@ task classpath(type: Copy) {
 task gem(type: JRubyExec, dependsOn: ["build", "gemspec", "classpath"]) {
     jrubyArgs "-rrubygems/gem_runner", "-eGem::GemRunner.new.run(ARGV)", "build"
     script "build/gemspec"
+    doLast { ant.move(file: "${project.name}-${project.version}.gem", todir: "pkg") }
 }
 
-task gemspec << { new File("build/gemspec").write($/
+task gemspec << { file("build/gemspec").write($/
 Gem::Specification.new do |gem|
   gem.summary       = "S3 file input plugin for Embulk, a plugin-based parallel bulk data loader"
 
