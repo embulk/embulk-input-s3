@@ -6,6 +6,7 @@ plugins {
 import com.github.jrubygradle.JRubyExec
 repositories {
     mavenCentral()
+    mavenLocal()
     jcenter()
 }
 configurations {
@@ -15,18 +16,19 @@ configurations {
 version = "0.1.0"
 
 dependencies {
-    compile  "org.embulk:embulk-core:0.3.2"
-    provided "org.embulk:embulk-core:0.3.2"
+    compile  "org.embulk:embulk-core:0.4.0"
+    provided "org.embulk:embulk-core:0.4.0"
     compile "com.amazonaws:aws-java-sdk-s3:1.9.17"
     testCompile "junit:junit:4.+"
     testCompile "org.mockito:mockito-core:1.+"
 }
 
-task classpath(type: Copy) {
+task classpath(type: Copy, dependsOn: ["jar"]) {
     doFirst { file("classpath").deleteDir() }
     from (configurations.runtime - configurations.provided + files(jar.archivePath))
     into "classpath"
 }
+clean { delete 'classpath' }
 
 task gem(type: JRubyExec, dependsOn: ["build", "gemspec", "classpath"]) {
     jrubyArgs "-rrubygems/gem_runner", "-eGem::GemRunner.new.run(ARGV)", "build"
@@ -44,7 +46,7 @@ Gem::Specification.new do |gem|
   gem.authors       = ["Sadayuki Furuhashi"]
   gem.email         = ["frsyuki@gmail.com"]
   gem.license       = "Apache 2.0"
-  gem.homepage      = "https://github.com/embulk/embulk-plugin-s3"
+  gem.homepage      = "https://github.com/embulk/embulk-input-s3"
 
   gem.files         = `git ls-files`.split("\n") + Dir["classpath/*.jar"]
   gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})

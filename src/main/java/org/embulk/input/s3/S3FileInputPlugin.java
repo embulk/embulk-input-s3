@@ -1,4 +1,4 @@
-package org.embulk.plugin.s3;
+package org.embulk.input.s3;
 
 import java.util.List;
 import java.io.File;
@@ -114,7 +114,7 @@ public class S3FileInputPlugin
             FileInputPlugin.Control control)
     {
         control.run(taskSource, processorCount);
-        return Exec.newNextConfig();
+        return Exec.newConfigDiff();
     }
 
     @Override
