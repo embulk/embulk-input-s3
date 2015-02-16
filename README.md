@@ -21,6 +21,7 @@
 in:
   type: s3
   bucket: my-s3-bucket
+  path_prefix: logs/csv-
   endpoint: s3-us-west-1.amazonaws.com
   access_key_id: ABCXYZ123ABCXYZ123
   secret_access_key: AbCxYz123aBcXyZ123
