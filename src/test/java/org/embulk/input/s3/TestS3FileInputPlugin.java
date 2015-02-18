@@ -1,4 +1,4 @@
-package org.embulk.plugin.s3;
+package org.embulk.input.s3;
 
 import static org.junit.Assert.*;
 import java.util.List;

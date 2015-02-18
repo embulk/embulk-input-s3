@@ -13,12 +13,12 @@ import java.nio.file.FileVisitResult;
 import java.nio.file.attribute.BasicFileAttributes;
 import javax.validation.constraints.NotNull;
 import com.google.common.collect.ImmutableList;
-import com.fasterxml.jackson.annotation.JacksonInject;
 import org.embulk.config.Config;
 import org.embulk.config.Task;
 import org.embulk.config.TaskSource;
 import org.embulk.config.ConfigSource;
 import org.embulk.config.ConfigDiff;
+import org.embulk.config.ConfigInject;
 import org.embulk.config.CommitReport;
 import org.embulk.spi.BufferAllocator;
 import org.embulk.spi.Exec;
@@ -92,7 +92,7 @@ public class S3FileInputPlugin
         public List<String> getFiles();
         public void setFiles(List<String> files);
 
-        @JacksonInject
+        @ConfigInject
         public BufferAllocator getBufferAllocator();
     }
 
