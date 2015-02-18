@@ -3,7 +3,6 @@
 ## Overview
 
 * Plugin type: **file input**
-* Rollback supported: **yes**
 * Resume supported: **yes**
 * Cleanup supported: **yes**
 
