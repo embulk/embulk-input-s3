@@ -82,16 +82,16 @@ public class S3FileInputPlugin
 
     @Override
     public ConfigDiff resume(TaskSource taskSource,
-            int processorCount,
+            int taskCount,
             FileInputPlugin.Control control)
     {
-        control.run(taskSource, processorCount);
+        control.run(taskSource, taskCount);
         return Exec.newConfigDiff();
     }
 
     @Override
     public void cleanup(TaskSource taskSource,
-            int processorCount,
+            int taskCount,
             List<CommitReport> successCommitReports)
     {
         // do nothing
@@ -173,10 +173,10 @@ public class S3FileInputPlugin
     }
 
     @Override
-    public TransactionalFileInput open(TaskSource taskSource, int processorIndex)
+    public TransactionalFileInput open(TaskSource taskSource, int taskIndex)
     {
         PluginTask task = taskSource.loadTask(PluginTask.class);
-        return new S3FileInput(task, processorIndex);
+        return new S3FileInput(task, taskIndex);
     }
 
     public static class S3FileInput
@@ -192,11 +192,11 @@ public class S3FileInputPlugin
             private final String key;
             private boolean opened = false;
 
-            public SingleFileProvider(PluginTask task, int processorIndex)
+            public SingleFileProvider(PluginTask task, int taskIndex)
             {
                 this.client = newS3Client(task);
                 this.bucket = task.getBucket();
-                this.key = task.getFiles().get(processorIndex);
+                this.key = task.getFiles().get(taskIndex);
             }
 
             @Override
@@ -222,9 +222,9 @@ public class S3FileInputPlugin
             public void close() { }
         }
 
-        public S3FileInput(PluginTask task, int processorIndex)
+        public S3FileInput(PluginTask task, int taskIndex)
         {
-            super(task.getBufferAllocator(), new SingleFileProvider(task, processorIndex));
+            super(task.getBufferAllocator(), new SingleFileProvider(task, taskIndex));
         }
 
         public void abort() { }
