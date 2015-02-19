@@ -74,10 +74,14 @@ public class S3FileInputPlugin
         PluginTask task = config.loadConfig(PluginTask.class);
 
         // list files recursively
-        task.setFiles(listFiles(task));
+        List<String> files = listFiles(task);
+        task.setFiles(files);
 
         // number of processors is same with number of files
-        return resume(task.dump(), task.getFiles().size(), control);
+        int taskCount = files.size();
+        ConfigDiff configDiff = resume(task.dump(), taskCount, control);
+        configDiff.set("last_path", files.get(taskCount - 1));
+        return configDiff;
     }
 
     @Override
