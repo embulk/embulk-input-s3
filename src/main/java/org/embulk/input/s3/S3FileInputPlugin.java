@@ -86,7 +86,11 @@ public class S3FileInputPlugin
             FileInputPlugin.Control control)
     {
         control.run(taskSource, taskCount);
-        return Exec.newConfigDiff();
+
+        PluginTask task = taskSource.loadTask(PluginTask.class);
+        ConfigDiff configDiff = Exec.newConfigDiff();
+        configDiff.set("last_path", task.getFiles().get(taskCount - 1));
+        return configDiff;
     }
 
     @Override
