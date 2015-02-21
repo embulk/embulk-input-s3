@@ -1,6 +1,8 @@
 package org.embulk.input.s3;
 
 import java.util.List;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.io.IOException;
 import java.io.InputStream;
 import com.google.common.collect.ImmutableList;
@@ -76,6 +78,8 @@ public class S3FileInputPlugin
         // list files recursively
         task.setFiles(listFiles(task));
 
+        // TODO what if task.getFiles().isEmpty()?
+
         // number of processors is same with number of files
         return resume(task.dump(), task.getFiles().size(), control);
     }
@@ -85,8 +89,14 @@ public class S3FileInputPlugin
             int taskCount,
             FileInputPlugin.Control control)
     {
+        PluginTask task = taskSource.loadTask(PluginTask.class);
+
         control.run(taskSource, taskCount);
-        return Exec.newConfigDiff();
+
+        List<String> files = new ArrayList<String>(task.getFiles());
+        Collections.sort(files);
+        return Exec.newConfigDiff().
+            set("last_path", files.get(files.size() - 1));
     }
 
     @Override
