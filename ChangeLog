@@ -1,0 +1,9 @@
+Release 0.1.2 - 2015-02-20
+
+* Sets last_path to the next config.
+* Upgraded embulk version to 0.4.6.
+
+Release 0.1.1 - 2015-02-20
+
+* Upgraded embulk version to 0.4.2.
+

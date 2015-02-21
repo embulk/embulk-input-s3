@@ -13,11 +13,11 @@ configurations {
     provided
 }
 
-version = "0.1.1"
+version = "0.1.2"
 
 dependencies {
-    compile  "org.embulk:embulk-core:0.4.4"
-    provided "org.embulk:embulk-core:0.4.4"
+    compile  "org.embulk:embulk-core:0.4.6"
+    provided "org.embulk:embulk-core:0.4.6"
     compile "com.amazonaws:aws-java-sdk-s3:1.9.17"
     testCompile "junit:junit:4.+"
     testCompile "org.mockito:mockito-core:1.+"
