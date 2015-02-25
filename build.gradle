@@ -16,8 +16,8 @@ configurations {
 version = "0.1.2"
 
 dependencies {
-    compile  "org.embulk:embulk-core:0.4.6"
-    provided "org.embulk:embulk-core:0.4.6"
+    compile  "org.embulk:embulk-core:0.4.8"
+    provided "org.embulk:embulk-core:0.4.8"
     compile "com.amazonaws:aws-java-sdk-s3:1.9.17"
     testCompile "junit:junit:4.+"
     testCompile "org.mockito:mockito-core:1.+"
@@ -55,7 +55,6 @@ Gem::Specification.new do |spec|
 
   spec.add_development_dependency "bundler", [">= 1.0"]
   spec.add_development_dependency "rake", [">= 0.10.0"]
-  spec.add_development_dependency "test-unit", ["~> 3.0.2"]
 end
 /$)
 }
