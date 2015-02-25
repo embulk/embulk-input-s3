@@ -37,26 +37,25 @@ task gem(type: JRubyExec, dependsOn: ["build", "gemspec", "classpath"]) {
 }
 
 task gemspec << { file("build/gemspec").write($/
-Gem::Specification.new do |gem|
-  gem.summary       = "S3 file input plugin for Embulk, a plugin-based parallel bulk data loader"
+Gem::Specification.new do |spec|
+  spec.name          = "${project.name}"
+  spec.version       = "${project.version}"
+  spec.summary       = "S3 file input plugin for Embulk"
+  spec.description   = "Reads files stored on Amazon S3"
+  spec.authors       = ["Sadayuki Furuhashi"]
+  spec.email         = ["frsyuki@gmail.com"]
+  spec.licenses      = ["Apache 2.0"]
+  spec.homepage      = "https://github.com/embulk/embulk-input-s3"
 
-  gem.name          = "${project.name}"
-  gem.version       = "${project.version}"
-  gem.description   = gem.summary
-  gem.authors       = ["Sadayuki Furuhashi"]
-  gem.email         = ["frsyuki@gmail.com"]
-  gem.license       = "Apache 2.0"
-  gem.homepage      = "https://github.com/embulk/embulk-input-s3"
+  spec.files         = `git ls-files`.split("\n") + Dir["classpath/*.jar"]
+  spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
+  spec.executables   = spec.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
+  spec.require_paths = ["lib"]
+  spec.has_rdoc      = false
 
-  gem.files         = `git ls-files`.split("\n") + Dir["classpath/*.jar"]
-  gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})
-  gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
-  gem.require_paths = ["lib"]
-  gem.has_rdoc      = false
-
-  gem.add_development_dependency "bundler", [">= 1.0"]
-  gem.add_development_dependency "rake", [">= 0.10.0"]
-  gem.add_development_dependency "test-unit", ["~> 3.0.2"]
+  spec.add_development_dependency "bundler", [">= 1.0"]
+  spec.add_development_dependency "rake", [">= 0.10.0"]
+  spec.add_development_dependency "test-unit", ["~> 3.0.2"]
 end
 /$)
 }
