@@ -20,6 +20,7 @@ dependencies {
     provided "org.embulk:embulk-core:0.5.2"
     compile "com.amazonaws:aws-java-sdk-s3:1.9.22"
     testCompile "junit:junit:4.+"
+    testCompile "org.embulk:embulk-core:0.5.2:tests"
     testCompile "org.mockito:mockito-core:1.+"
 }
 

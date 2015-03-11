@@ -2,6 +2,9 @@ package org.embulk.input.s3;
 
 import static org.junit.Assert.*;
 import java.util.List;
+
+import org.embulk.EmbulkTestRuntime;
+import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -14,6 +17,9 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
 
 public class TestS3FileInputPlugin
 {
+    @Rule
+    public EmbulkTestRuntime runtime = new EmbulkTestRuntime();
+
     @Test
     public void listS3FilesByPrefix()
     {
