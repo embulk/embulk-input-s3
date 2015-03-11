@@ -33,6 +33,8 @@ import org.embulk.spi.FileInputPlugin;
 import org.embulk.spi.TransactionalFileInput;
 import org.embulk.spi.util.InputStreamFileInput;
 
+import static org.embulk.spi.util.Inputs.formatPath;
+
 public class S3FileInputPlugin
         implements FileInputPlugin
 {
@@ -169,7 +171,7 @@ public class S3FileInputPlugin
 
         String lastKey = lastPath.orNull();
         do {
-            ListObjectsRequest req = new ListObjectsRequest(bucketName, prefix, lastKey, null, 1024);
+            ListObjectsRequest req = new ListObjectsRequest(bucketName, formatPath(prefix), lastKey, null, 1024);
             ObjectListing ol = client.listObjects(req);
             for(S3ObjectSummary s : ol.getObjectSummaries()) {
                 if (s.getSize() > 0) {
