@@ -4,9 +4,11 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.io.InputStream;
 import com.google.common.collect.ImmutableList;
 import com.google.common.base.Optional;
+import com.google.common.base.Throwables;
 import org.slf4j.Logger;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
@@ -32,6 +34,9 @@ import org.embulk.spi.Exec;
 import org.embulk.spi.FileInputPlugin;
 import org.embulk.spi.TransactionalFileInput;
 import org.embulk.spi.util.InputStreamFileInput;
+import org.embulk.input.s3.RetryExecutor.Retryable;
+import org.embulk.input.s3.RetryExecutor.RetryGiveupException;
+import static org.embulk.input.s3.RetryExecutor.retryExecutor;
 
 public class S3FileInputPlugin
         implements FileInputPlugin
@@ -189,6 +194,73 @@ public class S3FileInputPlugin
         return new S3FileInput(task, taskIndex);
     }
 
+    private static class S3RetryableOpener
+            implements RetryableInputStream.Opener
+    {
+        private final Logger log = Exec.getLogger(S3FileInputPlugin.class);
+
+        private final AmazonS3Client client;
+        private final GetObjectRequest request;
+        private final long contentLength;
+
+        public S3RetryableOpener(AmazonS3Client client, GetObjectRequest request, long contentLength)
+        {
+            this.client = client;
+            this.request = request;
+            this.contentLength = contentLength;
+        }
+
+        @Override
+        public InputStream open(final long offset, final Exception exception) throws IOException
+        {
+            try {
+                return retryExecutor()
+                    .withRetryLimit(3)
+                    .withInitialRetryWait(500)
+                    .withMaxRetryWait(30*1000)
+                    .runInterruptible(new Retryable<InputStream>() {
+                        @Override
+                        public InputStream call() throws InterruptedIOException
+                        {
+                            log.warn(String.format("S3 read failed. Retrying GET request with %,d bytes offset", offset), exception);
+                            request.setRange(offset, contentLength - 1);  // [first, last]
+                            return client.getObject(request).getObjectContent();
+                        }
+
+                        @Override
+                        public boolean isRetryableException(Exception exception)
+                        {
+                            return true;  // TODO
+                        }
+
+                        @Override
+                        public void onRetry(Exception exception, int retryCount, int retryLimit, int retryWait)
+                                throws RetryGiveupException
+                        {
+                            String message = String.format("S3 GET request failed. Retrying %d/%d after %d seconds. Message: %s",
+                                    retryCount, retryLimit, retryWait/1000, exception.getMessage());
+                            if (retryCount % 3 == 0) {
+                                log.warn(message, exception);
+                            } else {
+                                log.warn(message);
+                            }
+                        }
+
+                        @Override
+                        public void onGiveup(Exception firstException, Exception lastException)
+                                throws RetryGiveupException
+                        {
+                        }
+                    });
+            } catch (RetryGiveupException ex) {
+                Throwables.propagateIfInstanceOf(ex.getCause(), IOException.class);
+                throw Throwables.propagate(ex.getCause());
+            } catch (InterruptedException ex) {
+                throw new InterruptedIOException();
+            }
+        }
+    }
+
     public static class S3FileInput
             extends InputStreamFileInput
             implements TransactionalFileInput
@@ -217,15 +289,8 @@ public class S3FileInputPlugin
                 }
                 opened = true;
                 GetObjectRequest request = new GetObjectRequest(bucket, key);
-                //if (pos > 0) {
-                //    request.setRange(pos, contentLength);
-                //}
                 S3Object obj = client.getObject(request);
-                //if (pos <= 0) {
-                //    // first call
-                //    contentLength = obj.getObjectMetadata().getContentLength();
-                //}
-                return obj.getObjectContent();
+                return new RetryableInputStream(obj.getObjectContent(), new S3RetryableOpener(client, request, obj.getObjectMetadata().getContentLength()));
             }
 
             @Override
