@@ -3,7 +3,8 @@ package org.embulk.input.s3;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 
-public class RetryExecutor {
+public class RetryExecutor
+{
     public static RetryExecutor retryExecutor()
     {
         // TODO default configuration

@@ -2,7 +2,6 @@ package org.embulk.input.s3;
 
 import java.io.InputStream;
 import java.io.IOException;
-import java.io.FilterInputStream;
 
 public class RetryableInputStream
         extends InputStream
@@ -39,6 +38,7 @@ public class RetryableInputStream
         in = opener.open(offset, exception);
     }
 
+    @Override
     public int read() throws IOException
     {
         while (true) {
@@ -52,6 +52,7 @@ public class RetryableInputStream
         }
     }
 
+    @Override
     public int read(byte[] b) throws IOException
     {
         while (true) {
@@ -65,6 +66,7 @@ public class RetryableInputStream
         }
     }
 
+    @Override
     public int read(byte[] b, int off, int len) throws IOException
     {
         while (true) {
@@ -78,6 +80,7 @@ public class RetryableInputStream
         }
     }
 
+    @Override
     public long skip(long n) throws IOException
     {
         while (true) {
