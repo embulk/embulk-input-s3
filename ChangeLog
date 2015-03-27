@@ -1,3 +1,7 @@
+Release 0.1.7 - 2015-03-27
+
+* Keep last_path in case of no input files
+
 Release 0.1.6 - 2015-03-27
 
 * Fixed error when there are no input files
