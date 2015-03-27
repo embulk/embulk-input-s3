@@ -1,3 +1,7 @@
+Release 0.1.6 - 2015-03-27
+
+* Fixed error when there are no input files
+
 Release 0.1.5 - 2015-03-23
 
 * Implemented retrying
