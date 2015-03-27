@@ -98,13 +98,16 @@ public class S3FileInputPlugin
 
         control.run(taskSource, taskCount);
 
-        List<String> files = new ArrayList<String>(task.getFiles());
-        Collections.sort(files);
-
+        // build next config
         ConfigDiff configDiff = Exec.newConfigDiff();
-        if (!files.isEmpty()) {
+
+        // last_path
+        if (!task.getFiles().isEmpty()) {
+            List<String> files = new ArrayList<String>(task.getFiles());
+            Collections.sort(files);
             configDiff.set("last_path", files.get(files.size() - 1));
         }
+
         return configDiff;
     }
 
