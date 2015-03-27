@@ -100,8 +100,12 @@ public class S3FileInputPlugin
 
         List<String> files = new ArrayList<String>(task.getFiles());
         Collections.sort(files);
-        return Exec.newConfigDiff().
-            set("last_path", files.get(files.size() - 1));
+
+        ConfigDiff configDiff = Exec.newConfigDiff();
+        if (!files.isEmpty()) {
+            configDiff.set("last_path", files.get(files.size() - 1));
+        }
+        return configDiff;
     }
 
     @Override
