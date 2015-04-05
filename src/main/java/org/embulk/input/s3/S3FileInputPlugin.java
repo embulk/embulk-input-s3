@@ -3,13 +3,19 @@ package org.embulk.input.s3;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.InputStream;
+
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
+
 import org.slf4j.Logger;
+
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
@@ -21,6 +27,7 @@ import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.Protocol;
+
 import org.embulk.config.Config;
 import org.embulk.config.ConfigInject;
 import org.embulk.config.ConfigDefault;
@@ -36,6 +43,7 @@ import org.embulk.spi.TransactionalFileInput;
 import org.embulk.spi.util.InputStreamFileInput;
 import org.embulk.input.s3.RetryExecutor.Retryable;
 import org.embulk.input.s3.RetryExecutor.RetryGiveupException;
+
 import static org.embulk.input.s3.RetryExecutor.retryExecutor;
 
 public class S3FileInputPlugin
@@ -49,6 +57,10 @@ public class S3FileInputPlugin
 
         @Config("path_prefix")
         public String getPathPrefix();
+
+        @Config("path_patterns")
+        @ConfigDefault("[]")
+        public List<String> getPathPatterns();
 
         @Config("last_path")
         @ConfigDefault("null")
@@ -171,7 +183,33 @@ public class S3FileInputPlugin
         AmazonS3Client client = newS3Client(task);
         String bucketName = task.getBucket();
 
-        return listS3FilesByPrefix(client, bucketName, task.getPathPrefix(), task.getLastPath());
+        return listS3FilesByPrefix(client, bucketName, task.getPathPrefix(), task.getPathPatterns(), task.getLastPath());
+    }
+
+    private static List<Pattern> toPattern(List<String> regexps) {
+        Builder<Pattern> builder = ImmutableList.builder();
+
+        for (String regexp : regexps) {
+            builder.add(Pattern.compile(regexp));
+        }
+
+        return builder.build();
+    }
+
+    private static boolean matchesAny(String key, List<Pattern> patterns) {
+        if (patterns.isEmpty()) {
+            return true;
+        }
+
+        for (Pattern pattern : patterns) {
+            Matcher matcher = pattern.matcher(key);
+
+            if (matcher.find()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -180,16 +218,18 @@ public class S3FileInputPlugin
      * The resulting list does not include the file that's size == 0.
      */
     public static List<String> listS3FilesByPrefix(AmazonS3Client client, String bucketName,
-            String prefix, Optional<String> lastPath)
+            String prefix, List<String> regexps, Optional<String> lastPath)
     {
         ImmutableList.Builder<String> builder = ImmutableList.builder();
+
+        List<Pattern> patterns = toPattern(regexps);
 
         String lastKey = lastPath.orNull();
         do {
             ListObjectsRequest req = new ListObjectsRequest(bucketName, prefix, lastKey, null, 1024);
             ObjectListing ol = client.listObjects(req);
             for(S3ObjectSummary s : ol.getObjectSummaries()) {
-                if (s.getSize() > 0) {
+                if (s.getSize() > 0 && matchesAny(s.getKey(), patterns)) {
                     builder.add(s.getKey());
                 }
             }
