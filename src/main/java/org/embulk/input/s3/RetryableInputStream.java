@@ -6,36 +6,36 @@ import java.io.IOException;
 public class RetryableInputStream
         extends InputStream
 {
-    public interface Opener
+    public interface Reopener
     {
-        public InputStream open(long offset, Exception exception) throws IOException;
+        public InputStream reopen(long offset, Exception closedCause) throws IOException;
     }
 
-    private final Opener opener;
+    private final Reopener reopener;
     protected InputStream in;
     private long offset;
     private long markedOffset;
 
-    public RetryableInputStream(InputStream initialInputStream, Opener reopener)
+    public RetryableInputStream(InputStream initialInputStream, Reopener reopener)
     {
-        this.opener = reopener;
+        this.reopener = reopener;
         this.in = initialInputStream;
         this.offset = 0L;
         this.markedOffset = 0L;
     }
 
-    public RetryableInputStream(Opener opener) throws IOException
+    public RetryableInputStream(Reopener reopener) throws IOException
     {
-        this(opener.open(0, null), opener);
+        this(reopener.reopen(0, null), reopener);
     }
 
-    private void reopen(Exception exception) throws IOException
+    private void reopen(Exception closedCause) throws IOException
     {
         if (in != null) {
             in.close();
             in = null;
         }
-        in = opener.open(offset, exception);
+        in = reopener.reopen(offset, closedCause);
     }
 
     @Override

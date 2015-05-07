@@ -166,7 +166,7 @@ public class S3FileInputPlugin
         return client;
     }
 
-    public List<String> listFiles(PluginTask task)
+    private List<String> listFiles(PluginTask task)
     {
         AmazonS3Client client = newS3Client(task);
         String bucketName = task.getBucket();
@@ -206,8 +206,8 @@ public class S3FileInputPlugin
         return new S3FileInput(task, taskIndex);
     }
 
-    private static class S3RetryableOpener
-            implements RetryableInputStream.Opener
+    private static class S3InputStreamReopener
+            implements RetryableInputStream.Reopener
     {
         private final Logger log = Exec.getLogger(S3FileInputPlugin.class);
 
@@ -215,7 +215,7 @@ public class S3FileInputPlugin
         private final GetObjectRequest request;
         private final long contentLength;
 
-        public S3RetryableOpener(AmazonS3Client client, GetObjectRequest request, long contentLength)
+        public S3InputStreamReopener(AmazonS3Client client, GetObjectRequest request, long contentLength)
         {
             this.client = client;
             this.request = request;
@@ -223,7 +223,7 @@ public class S3FileInputPlugin
         }
 
         @Override
-        public InputStream open(final long offset, final Exception exception) throws IOException
+        public InputStream reopen(final long offset, final Exception closedCause) throws IOException
         {
             try {
                 return retryExecutor()
@@ -234,7 +234,7 @@ public class S3FileInputPlugin
                         @Override
                         public InputStream call() throws InterruptedIOException
                         {
-                            log.warn(String.format("S3 read failed. Retrying GET request with %,d bytes offset", offset), exception);
+                            log.warn(String.format("S3 read failed. Retrying GET request with %,d bytes offset", offset), closedCause);
                             request.setRange(offset, contentLength - 1);  // [first, last]
                             return client.getObject(request).getObjectContent();
                         }
@@ -302,7 +302,7 @@ public class S3FileInputPlugin
                 opened = true;
                 GetObjectRequest request = new GetObjectRequest(bucket, key);
                 S3Object obj = client.getObject(request);
-                return new RetryableInputStream(obj.getObjectContent(), new S3RetryableOpener(client, request, obj.getObjectMetadata().getContentLength()));
+                return new RetryableInputStream(obj.getObjectContent(), new S3InputStreamReopener(client, request, obj.getObjectMetadata().getContentLength()));
             }
 
             @Override
