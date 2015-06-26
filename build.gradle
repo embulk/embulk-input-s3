@@ -54,3 +54,8 @@ subprojects {
         doLast { ant.move(file: "${project.name}-${project.version}.gem", todir: "${parent.projectDir}/pkg") }
     }
 }
+
+task gemPush << {
+    "gem push pkg/embulk-input-s3-${project.version}.gem".execute().waitFor()
+    "gem push pkg/embulk-input-riak_cs-${project.version}.gem".execute().waitFor()
+}
