@@ -4,57 +4,53 @@ plugins {
     id "java"
 }
 import com.github.jrubygradle.JRubyExec
-repositories {
-    mavenCentral()
-    mavenLocal()
-    jcenter()
-}
-configurations {
-    provided
+
+allprojects {
+    group = 'org.embulk.input.s3'
+    version = '0.2.0'
 }
 
-version = "0.1.7"
+subprojects {
+    apply plugin: 'maven'  // install jar files to the local repo: $ gradle install
+    apply plugin: 'java'
+    //apply plugin: 'findbugs'
+    //apply plugin: 'jacoco'
+    apply plugin: 'com.github.jruby-gradle.base'
 
-dependencies {
-    compile  "org.embulk:embulk-core:0.6.13"
-    provided "org.embulk:embulk-core:0.6.13"
-    compile "com.amazonaws:aws-java-sdk-s3:1.9.22"
-    testCompile "junit:junit:4.+"
-    testCompile "org.mockito:mockito-core:1.+"
-}
 
-task classpath(type: Copy, dependsOn: ["jar"]) {
-    doFirst { file("classpath").deleteDir() }
-    from (configurations.runtime - configurations.provided + files(jar.archivePath))
-    into "classpath"
-}
-clean { delete 'classpath' }
+    repositories {
+        mavenCentral()
+        jcenter()
+    }
 
-task gem(type: JRubyExec, dependsOn: ["build", "gemspec", "classpath"]) {
-    jrubyArgs "-rrubygems/gem_runner", "-eGem::GemRunner.new.run(ARGV)", "build"
-    script "build/gemspec"
-    doLast { ant.move(file: "${project.name}-${project.version}.gem", todir: "pkg") }
-}
+    configurations {
+        provided
+    }
 
-task gemspec << { file("build/gemspec").write($/
-Gem::Specification.new do |spec|
-  spec.name          = "${project.name}"
-  spec.version       = "${project.version}"
-  spec.summary       = "S3 file input plugin for Embulk"
-  spec.description   = "Reads files stored on Amazon S3"
-  spec.authors       = ["Sadayuki Furuhashi"]
-  spec.email         = ["frsyuki@gmail.com"]
-  spec.licenses      = ["Apache 2.0"]
-  spec.homepage      = "https://github.com/embulk/embulk-input-s3"
+    dependencies {
+        compile  "org.embulk:embulk-core:0.6.13"
+        provided "org.embulk:embulk-core:0.6.13"
+        compile "com.amazonaws:aws-java-sdk-s3:1.9.22"
+        testCompile "junit:junit:4.+"
+        testCompile "org.mockito:mockito-core:1.+"
+    }
 
-  spec.files         = `git ls-files`.split("\n") + Dir["classpath/*.jar"]
-  spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
-  spec.executables   = spec.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
-  spec.require_paths = ["lib"]
-  spec.has_rdoc      = false
+    gradle.projectsEvaluated {
+        tasks.withType(JavaCompile) {
+            options.compilerArgs << "-Xlint:unchecked" //<< "-Xlint:deprecation"
+        }
+    }
 
-  spec.add_development_dependency "bundler", [">= 1.0"]
-  spec.add_development_dependency "rake", [">= 0.10.0"]
-end
-/$)
+    task classpath(type: Copy, dependsOn: ["jar"]) {
+        doFirst { file('classpath').deleteDir() }
+        from (configurations.runtime - configurations.provided + files(jar.archivePath))
+        into 'classpath'
+    }
+    clean { delete 'classpath' }
+
+    task gem(type: JRubyExec, dependsOn: ['build', 'gemspec', 'classpath']) {
+        jrubyArgs '-rrubygems/gem_runner', "-eGem::GemRunner.new.run(ARGV)", 'build'
+        script "${project.projectDir.absolutePath}/build/gemspec"
+        doLast { ant.move(file: "${project.name}-${project.version}.gem", todir: "${parent.projectDir}/pkg") }
+    }
 }

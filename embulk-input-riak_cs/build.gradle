@@ -1,0 +1,28 @@
+dependencies {
+    compile project(':embulk-input-s3')
+
+    testCompile project(':embulk-input-s3').sourceSets.test.output
+}
+
+task gemspec << { file("build/gemspec").write($/
+Gem::Specification.new do |spec|
+  spec.name          = "${project.name}"
+  spec.version       = "${project.version}"
+  spec.summary       = "Riak CS file input plugin for Embulk"
+  spec.description   = "Reads files stored on Riak CS"
+  spec.authors       = ["Sadayuki Furuhashi"]
+  spec.email         = ["frsyuki@gmail.com"]
+  spec.licenses      = ["Apache 2.0"]
+  spec.homepage      = "https://github.com/embulk/embulk-input-s3"
+
+  spec.files         = `git ls-files`.split("\n") + Dir["classpath/*.jar"]
+  spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
+  spec.executables   = spec.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
+  spec.require_paths = ["lib"]
+  spec.has_rdoc      = false
+
+  spec.add_development_dependency "bundler", [">= 1.0"]
+  spec.add_development_dependency "rake", [">= 0.10.0"]
+end
+/$)
+}

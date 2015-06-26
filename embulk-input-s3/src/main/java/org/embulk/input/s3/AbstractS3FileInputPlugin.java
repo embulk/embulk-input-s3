@@ -35,11 +35,11 @@ import org.embulk.spi.FileInputPlugin;
 import org.embulk.spi.TransactionalFileInput;
 import org.embulk.spi.util.InputStreamFileInput;
 import org.embulk.spi.util.ResumableInputStream;
-import org.embulk.input.s3.RetryExecutor.Retryable;
-import org.embulk.input.s3.RetryExecutor.RetryGiveupException;
-import static org.embulk.input.s3.RetryExecutor.retryExecutor;
+import org.embulk.spi.util.RetryExecutor.Retryable;
+import org.embulk.spi.util.RetryExecutor.RetryGiveupException;
+import static org.embulk.spi.util.RetryExecutor.retryExecutor;
 
-public class S3FileInputPlugin
+public abstract class AbstractS3FileInputPlugin
         implements FileInputPlugin
 {
     public interface PluginTask
@@ -55,17 +55,13 @@ public class S3FileInputPlugin
         @ConfigDefault("null")
         public Optional<String> getLastPath();
 
-        @Config("endpoint")
-        @ConfigDefault("null")
-        public Optional<String> getEndpoint();
-
-        // TODO timeout, ssl, etc
-
         @Config("access_key_id")
         public String getAccessKeyId();
 
         @Config("secret_access_key")
         public String getSecretAccessKey();
+
+        // TODO timeout, ssl, etc
 
         // TODO support more options such as STS
 
@@ -76,6 +72,8 @@ public class S3FileInputPlugin
         public BufferAllocator getBufferAllocator();
     }
 
+    protected abstract Class<? extends PluginTask> getTaskClass();
+
     @Override
     public ConfigDiff transaction(ConfigSource config, FileInputPlugin.Control control)
     {
@@ -83,8 +81,6 @@ public class S3FileInputPlugin
 
         // list files recursively
         task.setFiles(listFiles(task));
-
-        // TODO what if task.getFiles().isEmpty()?
 
         // number of processors is same with number of files
         return resume(task.dump(), task.getFiles().size(), control);
@@ -96,6 +92,9 @@ public class S3FileInputPlugin
             FileInputPlugin.Control control)
     {
         PluginTask task = taskSource.loadTask(PluginTask.class);
+
+        // validate task
+        newS3Client(task);
 
         control.run(taskSource, taskCount);
 
@@ -125,7 +124,12 @@ public class S3FileInputPlugin
         // do nothing
     }
 
-    public static AWSCredentialsProvider getCredentialsProvider(PluginTask task)
+    protected AmazonS3Client newS3Client(PluginTask task)
+    {
+        return new AmazonS3Client(getCredentialsProvider(task), getClientConfiguration(task));
+    }
+
+    protected AWSCredentialsProvider getCredentialsProvider(PluginTask task)
     {
         final AWSCredentials cred = new BasicAWSCredentials(
                 task.getAccessKeyId(), task.getSecretAccessKey());
@@ -141,30 +145,16 @@ public class S3FileInputPlugin
         };
     }
 
-    private static AmazonS3Client newS3Client(PluginTask task)
+    protected ClientConfiguration getClientConfiguration(PluginTask task)
     {
-        AWSCredentialsProvider credentials = getCredentialsProvider(task);
-        AmazonS3Client client = newS3Client(credentials, task.getEndpoint());
-        return client;
-    }
-
-    private static AmazonS3Client newS3Client(AWSCredentialsProvider credentials,
-            Optional<String> endpoint)
-    {
-        // TODO get config from AmazonS3Task
         ClientConfiguration clientConfig = new ClientConfiguration();
+
         //clientConfig.setProtocol(Protocol.HTTP);
         clientConfig.setMaxConnections(50); // SDK default: 50
         clientConfig.setMaxErrorRetry(3); // SDK default: 3
         clientConfig.setSocketTimeout(8*60*1000); // SDK default: 50*1000
 
-        AmazonS3Client client = new AmazonS3Client(credentials, clientConfig);
-
-        if (endpoint.isPresent()) {
-            client.setEndpoint(endpoint.get());
-        }
-
-        return client;
+        return clientConfig;
     }
 
     private List<String> listFiles(PluginTask task)
@@ -210,7 +200,7 @@ public class S3FileInputPlugin
     private static class S3InputStreamReopener
             implements ResumableInputStream.Reopener
     {
-        private final Logger log = Exec.getLogger(S3FileInputPlugin.class);
+        private final Logger log = Exec.getLogger(S3InputStreamReopener.class);
 
         private final AmazonS3Client client;
         private final GetObjectRequest request;
@@ -274,42 +264,10 @@ public class S3FileInputPlugin
         }
     }
 
-    public static class S3FileInput
+    public class S3FileInput
             extends InputStreamFileInput
             implements TransactionalFileInput
     {
-        // TODO create single-file InputStreamFileInput utility
-        private static class SingleFileProvider
-                implements InputStreamFileInput.Provider
-        {
-            private AmazonS3Client client;
-            private final String bucket;
-            private final String key;
-            private boolean opened = false;
-
-            public SingleFileProvider(PluginTask task, int taskIndex)
-            {
-                this.client = newS3Client(task);
-                this.bucket = task.getBucket();
-                this.key = task.getFiles().get(taskIndex);
-            }
-
-            @Override
-            public InputStream openNext() throws IOException
-            {
-                if (opened) {
-                    return null;
-                }
-                opened = true;
-                GetObjectRequest request = new GetObjectRequest(bucket, key);
-                S3Object obj = client.getObject(request);
-                return new ResumableInputStream(obj.getObjectContent(), new S3InputStreamReopener(client, request, obj.getObjectMetadata().getContentLength()));
-            }
-
-            @Override
-            public void close() { }
-        }
-
         public S3FileInput(PluginTask task, int taskIndex)
         {
             super(task.getBufferAllocator(), new SingleFileProvider(task, taskIndex));
@@ -320,6 +278,38 @@ public class S3FileInputPlugin
         public CommitReport commit()
         {
             return Exec.newCommitReport();
+        }
+
+        @Override
+        public void close() { }
+    }
+
+    // TODO create single-file InputStreamFileInput utility
+    private class SingleFileProvider
+            implements InputStreamFileInput.Provider
+    {
+        private AmazonS3Client client;
+        private final String bucket;
+        private final String key;
+        private boolean opened = false;
+
+        public SingleFileProvider(PluginTask task, int taskIndex)
+        {
+            this.client = newS3Client(task);
+            this.bucket = task.getBucket();
+            this.key = task.getFiles().get(taskIndex);
+        }
+
+        @Override
+        public InputStream openNext() throws IOException
+        {
+            if (opened) {
+                return null;
+            }
+            opened = true;
+            GetObjectRequest request = new GetObjectRequest(bucket, key);
+            S3Object obj = client.getObject(request);
+            return new ResumableInputStream(obj.getObjectContent(), new S3InputStreamReopener(client, request, obj.getObjectMetadata().getContentLength()));
         }
 
         @Override
