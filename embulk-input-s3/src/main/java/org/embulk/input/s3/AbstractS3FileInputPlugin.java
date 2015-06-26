@@ -77,7 +77,7 @@ public abstract class AbstractS3FileInputPlugin
     @Override
     public ConfigDiff transaction(ConfigSource config, FileInputPlugin.Control control)
     {
-        PluginTask task = config.loadConfig(PluginTask.class);
+        PluginTask task = config.loadConfig(getTaskClass());
 
         // list files recursively
         task.setFiles(listFiles(task));
@@ -91,7 +91,7 @@ public abstract class AbstractS3FileInputPlugin
             int taskCount,
             FileInputPlugin.Control control)
     {
-        PluginTask task = taskSource.loadTask(PluginTask.class);
+        PluginTask task = taskSource.loadTask(getTaskClass());
 
         // validate task
         newS3Client(task);
