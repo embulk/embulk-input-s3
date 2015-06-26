@@ -34,6 +34,7 @@ import org.embulk.spi.Exec;
 import org.embulk.spi.FileInputPlugin;
 import org.embulk.spi.TransactionalFileInput;
 import org.embulk.spi.util.InputStreamFileInput;
+import org.embulk.spi.util.ResumableInputStream;
 import org.embulk.input.s3.RetryExecutor.Retryable;
 import org.embulk.input.s3.RetryExecutor.RetryGiveupException;
 import static org.embulk.input.s3.RetryExecutor.retryExecutor;
@@ -207,7 +208,7 @@ public class S3FileInputPlugin
     }
 
     private static class S3InputStreamReopener
-            implements RetryableInputStream.Reopener
+            implements ResumableInputStream.Reopener
     {
         private final Logger log = Exec.getLogger(S3FileInputPlugin.class);
 
@@ -302,7 +303,7 @@ public class S3FileInputPlugin
                 opened = true;
                 GetObjectRequest request = new GetObjectRequest(bucket, key);
                 S3Object obj = client.getObject(request);
-                return new RetryableInputStream(obj.getObjectContent(), new S3InputStreamReopener(client, request, obj.getObjectMetadata().getContentLength()));
+                return new ResumableInputStream(obj.getObjectContent(), new S3InputStreamReopener(client, request, obj.getObjectMetadata().getContentLength()));
             }
 
             @Override
