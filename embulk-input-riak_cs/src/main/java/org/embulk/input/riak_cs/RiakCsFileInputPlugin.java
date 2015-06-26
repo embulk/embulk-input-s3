@@ -1,4 +1,4 @@
-package org.embulk.input;
+package org.embulk.input.riak_cs;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.services.s3.AmazonS3Client;

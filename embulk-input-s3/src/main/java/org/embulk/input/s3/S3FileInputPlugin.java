@@ -1,4 +1,4 @@
-package org.embulk.input;
+package org.embulk.input.s3;
 
 import com.google.common.base.Optional;
 import com.amazonaws.services.s3.AmazonS3Client;
