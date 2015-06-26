@@ -1,3 +1,8 @@
+Release 0.2.0 - 2015-06-26
+
+* Add embulk-output-riak_cs
+* Require embulk >= 0.6.8
+
 Release 0.1.7 - 2015-03-27
 
 * Keep last_path in case of no input files
