@@ -193,7 +193,7 @@ public abstract class AbstractS3FileInputPlugin
     @Override
     public TransactionalFileInput open(TaskSource taskSource, int taskIndex)
     {
-        PluginTask task = taskSource.loadTask(PluginTask.class);
+        PluginTask task = taskSource.loadTask(getTaskClass());
         return new S3FileInput(task, taskIndex);
     }
 
