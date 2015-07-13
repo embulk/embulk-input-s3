@@ -6,9 +6,12 @@ import java.util.Collections;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.InputStream;
+
+import com.amazonaws.internal.StaticCredentialsProvider;
 import com.google.common.collect.ImmutableList;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
+import org.embulk.config.*;
 import org.slf4j.Logger;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
@@ -20,15 +23,6 @@ import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.ClientConfiguration;
-import com.amazonaws.Protocol;
-import org.embulk.config.Config;
-import org.embulk.config.ConfigInject;
-import org.embulk.config.ConfigDefault;
-import org.embulk.config.Task;
-import org.embulk.config.TaskSource;
-import org.embulk.config.ConfigSource;
-import org.embulk.config.ConfigDiff;
-import org.embulk.config.CommitReport;
 import org.embulk.spi.BufferAllocator;
 import org.embulk.spi.Exec;
 import org.embulk.spi.FileInputPlugin;
@@ -56,10 +50,16 @@ public abstract class AbstractS3FileInputPlugin
         public Optional<String> getLastPath();
 
         @Config("access_key_id")
-        public String getAccessKeyId();
+        @ConfigDefault("null")
+        public Optional<String> getAccessKeyId();
 
         @Config("secret_access_key")
-        public String getSecretAccessKey();
+        @ConfigDefault("null")
+        public Optional<String> getSecretAccessKey();
+
+        @Config("credential_provider")
+        @ConfigDefault("null")
+        public Optional<String> getCredentialProvider();
 
         // TODO timeout, ssl, etc
 
@@ -88,8 +88,8 @@ public abstract class AbstractS3FileInputPlugin
 
     @Override
     public ConfigDiff resume(TaskSource taskSource,
-            int taskCount,
-            FileInputPlugin.Control control)
+                             int taskCount,
+                             FileInputPlugin.Control control)
     {
         PluginTask task = taskSource.loadTask(getTaskClass());
 
@@ -118,8 +118,8 @@ public abstract class AbstractS3FileInputPlugin
 
     @Override
     public void cleanup(TaskSource taskSource,
-            int taskCount,
-            List<CommitReport> successCommitReports)
+                        int taskCount,
+                        List<CommitReport> successCommitReports)
     {
         // do nothing
     }
@@ -131,18 +131,26 @@ public abstract class AbstractS3FileInputPlugin
 
     protected AWSCredentialsProvider getCredentialsProvider(PluginTask task)
     {
-        final AWSCredentials cred = new BasicAWSCredentials(
-                task.getAccessKeyId(), task.getSecretAccessKey());
-        return new AWSCredentialsProvider() {
-            public AWSCredentials getCredentials()
-            {
-                return cred;
-            }
+        if(task.getCredentialProvider().isPresent()){
+            final Optional<AWSCredentialProviders> provider = AWSCredentialProviders.fromName(task.getCredentialProvider().get());
+            return provider.isPresent() ? provider.get().createProvider(): fallbackToStaticProvider(task);
+        }else{
+            return fallbackToStaticProvider(task);
+        }
+    }
 
-            public void refresh()
-            {
-            }
-        };
+    private AWSCredentialsProvider fallbackToStaticProvider(PluginTask task){
+
+        if(!task.getSecretAccessKey().isPresent()){
+            throw new ConfigException("Attribute access_key_id is required but not set");
+        }
+
+        if(!task.getAccessKeyId().isPresent()){
+            throw new ConfigException("Attribute secret_access_key is required but not set");
+        }
+
+        final AWSCredentials cred = new BasicAWSCredentials(task.getAccessKeyId().get(), task.getSecretAccessKey().get());
+        return new StaticCredentialsProvider(cred);
     }
 
     protected ClientConfiguration getClientConfiguration(PluginTask task)
@@ -171,7 +179,7 @@ public abstract class AbstractS3FileInputPlugin
      * The resulting list does not include the file that's size == 0.
      */
     public static List<String> listS3FilesByPrefix(AmazonS3Client client, String bucketName,
-            String prefix, Optional<String> lastPath)
+                                                   String prefix, Optional<String> lastPath)
     {
         ImmutableList.Builder<String> builder = ImmutableList.builder();
 
@@ -218,43 +226,43 @@ public abstract class AbstractS3FileInputPlugin
         {
             try {
                 return retryExecutor()
-                    .withRetryLimit(3)
-                    .withInitialRetryWait(500)
-                    .withMaxRetryWait(30*1000)
-                    .runInterruptible(new Retryable<InputStream>() {
-                        @Override
-                        public InputStream call() throws InterruptedIOException
-                        {
-                            log.warn(String.format("S3 read failed. Retrying GET request with %,d bytes offset", offset), closedCause);
-                            request.setRange(offset, contentLength - 1);  // [first, last]
-                            return client.getObject(request).getObjectContent();
-                        }
-
-                        @Override
-                        public boolean isRetryableException(Exception exception)
-                        {
-                            return true;  // TODO
-                        }
-
-                        @Override
-                        public void onRetry(Exception exception, int retryCount, int retryLimit, int retryWait)
-                                throws RetryGiveupException
-                        {
-                            String message = String.format("S3 GET request failed. Retrying %d/%d after %d seconds. Message: %s",
-                                    retryCount, retryLimit, retryWait/1000, exception.getMessage());
-                            if (retryCount % 3 == 0) {
-                                log.warn(message, exception);
-                            } else {
-                                log.warn(message);
+                        .withRetryLimit(3)
+                        .withInitialRetryWait(500)
+                        .withMaxRetryWait(30*1000)
+                        .runInterruptible(new Retryable<InputStream>() {
+                            @Override
+                            public InputStream call() throws InterruptedIOException
+                            {
+                                log.warn(String.format("S3 read failed. Retrying GET request with %,d bytes offset", offset), closedCause);
+                                request.setRange(offset, contentLength - 1);  // [first, last]
+                                return client.getObject(request).getObjectContent();
                             }
-                        }
 
-                        @Override
-                        public void onGiveup(Exception firstException, Exception lastException)
-                                throws RetryGiveupException
-                        {
-                        }
-                    });
+                            @Override
+                            public boolean isRetryableException(Exception exception)
+                            {
+                                return true;  // TODO
+                            }
+
+                            @Override
+                            public void onRetry(Exception exception, int retryCount, int retryLimit, int retryWait)
+                                    throws RetryGiveupException
+                            {
+                                String message = String.format("S3 GET request failed. Retrying %d/%d after %d seconds. Message: %s",
+                                        retryCount, retryLimit, retryWait/1000, exception.getMessage());
+                                if (retryCount % 3 == 0) {
+                                    log.warn(message, exception);
+                                } else {
+                                    log.warn(message);
+                                }
+                            }
+
+                            @Override
+                            public void onGiveup(Exception firstException, Exception lastException)
+                                    throws RetryGiveupException
+                            {
+                            }
+                        });
             } catch (RetryGiveupException ex) {
                 Throwables.propagateIfInstanceOf(ex.getCause(), IOException.class);
                 throw Throwables.propagate(ex.getCause());
