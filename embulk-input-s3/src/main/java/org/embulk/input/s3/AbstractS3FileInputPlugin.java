@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.auth.AnonymousAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
@@ -56,10 +57,12 @@ public abstract class AbstractS3FileInputPlugin
         public Optional<String> getLastPath();
 
         @Config("access_key_id")
-        public String getAccessKeyId();
+        @ConfigDefault("null")
+        public Optional<String> getAccessKeyId();
 
         @Config("secret_access_key")
-        public String getSecretAccessKey();
+        @ConfigDefault("null")
+        public Optional<String> getSecretAccessKey();
 
         // TODO timeout, ssl, etc
 
@@ -131,8 +134,14 @@ public abstract class AbstractS3FileInputPlugin
 
     protected AWSCredentialsProvider getCredentialsProvider(PluginTask task)
     {
-        final AWSCredentials cred = new BasicAWSCredentials(
-                task.getAccessKeyId(), task.getSecretAccessKey());
+        final AWSCredentials cred;
+        if (task.getAccessKeyId().isPresent()) {
+            cred = new BasicAWSCredentials(
+                    task.getAccessKeyId().get(),
+                    task.getSecretAccessKey().get());
+        } else {
+            cred = new AnonymousAWSCredentials();
+        }
         return new AWSCredentialsProvider() {
             public AWSCredentials getCredentials()
             {
