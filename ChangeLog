@@ -1,3 +1,7 @@
+Release 0.2.1 - 2015-07-22
+
+* Add support for anonymous authentication for public buckets
+
 Release 0.2.0 - 2015-06-26
 
 * Add embulk-output-riak_cs
