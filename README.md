@@ -26,6 +26,15 @@ in:
   secret_access_key: AbCxYz123aBcXyZ123
 ```
 
+For public S3 buckets such as `landsat-pds`:
+
+```yaml
+in:
+  type: s3
+  bucket: landsat-pds
+  path_prefix: scene_list.gz
+```
+
 ## Build
 
 ```
