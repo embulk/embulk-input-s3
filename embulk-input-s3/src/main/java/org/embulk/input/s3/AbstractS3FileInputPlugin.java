@@ -43,6 +43,8 @@ import static org.embulk.spi.util.RetryExecutor.retryExecutor;
 public abstract class AbstractS3FileInputPlugin
         implements FileInputPlugin
 {
+    private final Logger log = Exec.getLogger(S3FileInputPlugin.class);
+
     public interface PluginTask
             extends Task
     {
@@ -170,6 +172,10 @@ public abstract class AbstractS3FileInputPlugin
     {
         AmazonS3Client client = newS3Client(task);
         String bucketName = task.getBucket();
+
+        if (task.getPathPrefix().equals("/")) {
+            log.info("Listing files with prefix \"/\". This doesn't mean all files in a bucket. If you intend to read all files, use \"path_prefix: ''\" (empty string) instead.");
+        }
 
         return listS3FilesByPrefix(client, bucketName, task.getPathPrefix(), task.getLastPath());
     }
