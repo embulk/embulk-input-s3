@@ -28,8 +28,8 @@ subprojects {
     }
 
     dependencies {
-        compile  "org.embulk:embulk-core:0.6.13"
-        provided "org.embulk:embulk-core:0.6.13"
+        compile  "org.embulk:embulk-core:0.7.0"
+        provided "org.embulk:embulk-core:0.7.0"
         compile "com.amazonaws:aws-java-sdk-s3:1.9.22"
         testCompile "junit:junit:4.+"
         testCompile "org.mockito:mockito-core:1.+"
