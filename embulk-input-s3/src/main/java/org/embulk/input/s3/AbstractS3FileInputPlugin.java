@@ -6,6 +6,8 @@ import java.util.Collections;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.InputStream;
+
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
@@ -212,7 +214,8 @@ public abstract class AbstractS3FileInputPlugin
         return new S3FileInput(task, taskIndex);
     }
 
-    private static class S3InputStreamReopener
+    @VisibleForTesting
+    static class S3InputStreamReopener
             implements ResumableInputStream.Reopener
     {
         private final Logger log = Exec.getLogger(S3InputStreamReopener.class);
