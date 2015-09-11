@@ -17,7 +17,6 @@ import org.embulk.config.TaskReport;
 import org.embulk.config.TaskSource;
 import org.embulk.input.s3.AbstractS3FileInputPlugin.PluginTask;
 import org.embulk.input.s3.AbstractS3FileInputPlugin.S3FileInput;
-import org.embulk.input.s3.AbstractS3FileInputPlugin.S3InputStreamReopener;
 import org.embulk.input.s3.S3FileInputPlugin.S3PluginTask;
 import org.embulk.spi.Exec;
 import org.embulk.spi.FileInputPlugin;
@@ -26,10 +25,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.List;
 
@@ -57,7 +53,7 @@ public class TestS3FileInputPlugin
     }
 
     @Test
-    public void createS3ClientSuccessfully()
+    public void checkS3ClientCreatedSuccessfully()
     {
         PluginTask task = config().loadConfig(plugin.getTaskClass());
         plugin.newS3Client(task);
@@ -140,7 +136,7 @@ public class TestS3FileInputPlugin
     }
 
     @Test
-    public void openS3File()
+    public void checkS3FileInputByOpen()
             throws Exception
     {
         doReturn(s3object("in/aa/a", "aa")).when(client).getObject(any(GetObjectRequest.class));
@@ -157,22 +153,6 @@ public class TestS3FileInputPlugin
             }
         }
         assertEquals("aa", sbuf.toString());
-    }
-
-    @Test
-    public void reopenS3FileByReopener()
-            throws Exception
-    {
-        S3Object s3object = s3object("in/aa/a", "aa");
-        long size = s3object.getObjectMetadata().getContentLength();
-        doReturn(s3object).when(client).getObject(any(GetObjectRequest.class));
-
-        S3InputStreamReopener opener = new S3InputStreamReopener(client, new GetObjectRequest("my_bucket", "in/aa/a"), size);
-
-        try (InputStream in = opener.reopen(0, new RuntimeException())) {
-            BufferedReader r = new BufferedReader(new InputStreamReader(in));
-            assertEquals("aa", r.readLine());
-        }
     }
 
     public static ConfigSource config()
