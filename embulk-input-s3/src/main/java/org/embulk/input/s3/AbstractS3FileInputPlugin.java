@@ -167,6 +167,22 @@ public abstract class AbstractS3FileInputPlugin
         clientConfig.setMaxErrorRetry(3); // SDK default: 3
         clientConfig.setSocketTimeout(8*60*1000); // SDK default: 50*1000
 
+	// no_proxy  isn't done.		
+ 
+	String proxyEnv = System.getenv("https_proxy");
+	
+	if (proxyEnv != null) {
+
+                String[] proxyArgs = proxyEnv.replaceAll("http://", "")
+                        .replaceAll("https://", "").split(":");
+                        clientConfig.setProxyHost(proxyArgs[0]);
+                if(proxyArgs.length == 2){
+                        clientConfig.setProxyPort(Integer.parseInt(proxyArgs[1]));				
+                }else{
+                        clientConfig.setProxyPort(80);
+                }
+	}
+
         return clientConfig;
     }
 
