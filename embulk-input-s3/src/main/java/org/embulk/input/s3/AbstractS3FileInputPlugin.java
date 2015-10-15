@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.auth.AnonymousAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
@@ -23,7 +24,7 @@ import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.ClientConfiguration;
-import com.amazonaws.Protocol;
+
 import org.embulk.config.Config;
 import org.embulk.config.ConfigInject;
 import org.embulk.config.ConfigDefault;
@@ -67,6 +68,10 @@ public abstract class AbstractS3FileInputPlugin
         @Config("secret_access_key")
         @ConfigDefault("null")
         public Optional<String> getSecretAccessKey();
+        
+        @Config("session_token")
+        @ConfigDefault("null")
+        public Optional<String> getSessionToken();
 
         // TODO timeout, ssl, etc
 
@@ -139,13 +144,26 @@ public abstract class AbstractS3FileInputPlugin
     protected AWSCredentialsProvider getCredentialsProvider(PluginTask task)
     {
         final AWSCredentials cred;
+		
         if (task.getAccessKeyId().isPresent()) {
-            cred = new BasicAWSCredentials(
-                    task.getAccessKeyId().get(),
-                    task.getSecretAccessKey().get());
+        	if( task.getSessionToken().isPresent()){
+        		cred =new BasicSessionCredentials(task.getAccessKeyId().get(), task
+    					.getSecretAccessKey().get(),
+    					task.getSessionToken().get()
+    					);
+        		
+    		}else{
+    			cred = new BasicAWSCredentials(task.getAccessKeyId().get(), task
+    					.getSecretAccessKey().get());
+    			
+    		}
         } else {
             cred = new AnonymousAWSCredentials();
         }
+        
+        
+		
+		
         return new AWSCredentialsProvider() {
             public AWSCredentials getCredentials()
             {
