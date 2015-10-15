@@ -17,7 +17,6 @@ subprojects {
     apply plugin: 'jacoco'
     apply plugin: 'com.github.jruby-gradle.base'
 
-
     repositories {
         mavenCentral()
         jcenter()
@@ -25,13 +24,14 @@ subprojects {
 
     configurations {
         provided
+        compile.exclude group: 'commons-logging', module: 'commons-logging'   // commons-logging api is provided by jcl-over-slf4j
     }
 
     dependencies {
         compile  "org.embulk:embulk-core:0.7.0"
         provided "org.embulk:embulk-core:0.7.0"
         compile "com.amazonaws:aws-java-sdk-s3:1.9.22"
-
+        runtime "org.slf4j:jcl-over-slf4j:1.7.12"  // aws-sdk uses Apache Commons Logging and Embulk uses slf4j
         testCompile "junit:junit:4.+"
         testCompile "org.mockito:mockito-core:1.+"
         testCompile  "org.embulk:embulk-core:0.7.0:tests"
