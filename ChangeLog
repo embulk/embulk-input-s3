@@ -1,3 +1,8 @@
+Release 0.2.3 - 2015-10-14
+
+* Enabled logging. Now we can get debug logs of AWS accesses using
+  "--log-level debug" command line argument.
+
 Release 0.2.2 - 2015-08-18
 
 * Upgraded embulk version to 0.7.0
