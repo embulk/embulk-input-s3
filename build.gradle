@@ -24,6 +24,7 @@ subprojects {
 
     configurations {
         provided
+        compile.exclude group: 'commons-logging', module: 'commons-logging'   // commons-logging api is provided by jcl-over-slf4j
     }
 
     dependencies {
