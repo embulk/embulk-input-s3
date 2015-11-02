@@ -1,3 +1,7 @@
+Release 0.2.4 - 2015-11-02
+
+* Bump AWS Java SDK version to fix date problem under Java 8u60.
+
 Release 0.2.3 - 2015-10-14
 
 * Enabled logging. Now we can get debug logs of AWS accesses using
