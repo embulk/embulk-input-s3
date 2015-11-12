@@ -14,8 +14,6 @@ import com.google.common.base.Throwables;
 import org.slf4j.Logger;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.auth.AnonymousAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
@@ -48,7 +46,7 @@ public abstract class AbstractS3FileInputPlugin
     private final Logger log = Exec.getLogger(S3FileInputPlugin.class);
 
     public interface PluginTask
-            extends Task
+            extends AwsCredentialsTask, Task
     {
         @Config("bucket")
         public String getBucket();
@@ -64,13 +62,7 @@ public abstract class AbstractS3FileInputPlugin
         @ConfigDefault("null")
         public Optional<String> getAccessKeyId();
 
-        @Config("secret_access_key")
-        @ConfigDefault("null")
-        public Optional<String> getSecretAccessKey();
-
         // TODO timeout, ssl, etc
-
-        // TODO support more options such as STS
 
         public List<String> getFiles();
         public void setFiles(List<String> files);
@@ -138,24 +130,7 @@ public abstract class AbstractS3FileInputPlugin
 
     protected AWSCredentialsProvider getCredentialsProvider(PluginTask task)
     {
-        final AWSCredentials cred;
-        if (task.getAccessKeyId().isPresent()) {
-            cred = new BasicAWSCredentials(
-                    task.getAccessKeyId().get(),
-                    task.getSecretAccessKey().get());
-        } else {
-            cred = new AnonymousAWSCredentials();
-        }
-        return new AWSCredentialsProvider() {
-            public AWSCredentials getCredentials()
-            {
-                return cred;
-            }
-
-            public void refresh()
-            {
-            }
-        };
+        return AwsCredentials.getAWSCredentialsProvider(task);
     }
 
     protected ClientConfiguration getClientConfiguration(PluginTask task)
