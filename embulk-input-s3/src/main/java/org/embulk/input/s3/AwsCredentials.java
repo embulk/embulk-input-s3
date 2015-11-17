@@ -29,8 +29,8 @@ public abstract class AwsCredentials
             // for backward compatibility
             if (!task.getAccessKeyId().isPresent() && !task.getAccessKeyId().isPresent()) {
                 final Logger log = Exec.getLogger(AwsCredentials.class);
-                log.warn("Both access_key_id and secret_access_key are not set. Assuming that 'auth_method: anonymous' parameter is set.");
-                log.warn("If you really intended to use anonymous authentication, set 'auth_method: anonymous' parameter.");
+                log.warn("Both access_key_id and secret_access_key are not set. Assuming that 'auth_method: anonymous' option is set.");
+                log.warn("If you intentionally use anonymous authentication, please set 'auth_method: anonymous' option.");
                 log.warn("This behavior will be removed in a futurte release.");
                 reject(task.getSessionToken(), "session_token");
                 reject(task.getProfileFile(), "profile_file");
@@ -166,14 +166,14 @@ public abstract class AwsCredentials
             return value.get();
         }
         else {
-            throw new ConfigException("Required parameter is not set: " + message);
+            throw new ConfigException("Required option is not set: " + message);
         }
     }
 
     private static <T> void reject(Optional<T> value, String message)
     {
         if (value.isPresent()) {
-            throw new ConfigException("Invalid parameter is set: " + message);
+            throw new ConfigException("Invalid option is set: " + message);
         }
     }
 }
