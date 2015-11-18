@@ -1,3 +1,13 @@
+
+Release 0.2.4 - 2015-11-18
+
+* Added "auth_method" option and basic, env, instance, profile, properties,
+  anonymous, and session authentication methods.
+* Upgraded aws-sdk to aws-java-sdk-s3 to v1.10.33
+* Added "total_file_count_limit" optoin that limits number of files to load.
+* List of files is compressed in memory. It can handle more files using less
+  memory.
+
 Release 0.2.3 - 2015-10-14
 
 * Enabled logging. Now we can get debug logs of AWS accesses using
