@@ -27,6 +27,9 @@ subprojects {
         compile.exclude group: 'commons-logging', module: 'commons-logging'   // commons-logging api is provided by jcl-over-slf4j
     }
 
+    sourceCompatibility = 1.7
+    targetCompatibility = 1.7
+
     dependencies {
         compile  "org.embulk:embulk-core:0.7.9"
         provided "org.embulk:embulk-core:0.7.9"
