@@ -99,7 +99,7 @@ public class FileList
             return entries.size();
         }
 
-        public boolean more()
+        public boolean needsMore()
         {
             return size() < limitCount;
         }
@@ -108,7 +108,7 @@ public class FileList
         {
             // TODO throw IllegalStateException if stream is already closed
 
-            if (!more()) {
+            if (!needsMore()) {
                 return false;
             }
 

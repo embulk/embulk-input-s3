@@ -168,7 +168,7 @@ public abstract class AbstractS3FileInputPlugin
             for (S3ObjectSummary s : ol.getObjectSummaries()) {
                 if (s.getSize() > 0) {
                     builder.add(s.getKey(), s.getSize());
-                    if (!builder.more()) {
+                    if (!builder.needsMore()) {
                         return;
                     }
                 }
