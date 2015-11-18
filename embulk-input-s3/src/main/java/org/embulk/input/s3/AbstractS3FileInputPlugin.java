@@ -3,6 +3,7 @@ package org.embulk.input.s3;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.InputStream;
@@ -46,7 +47,7 @@ public abstract class AbstractS3FileInputPlugin
     private final Logger log = Exec.getLogger(S3FileInputPlugin.class);
 
     public interface PluginTask
-            extends AwsCredentialsTask, Task
+            extends AwsCredentialsTask, FileList.Task, Task
     {
         @Config("bucket")
         public String getBucket();
@@ -64,8 +65,8 @@ public abstract class AbstractS3FileInputPlugin
 
         // TODO timeout, ssl, etc
 
-        public List<String> getFiles();
-        public void setFiles(List<String> files);
+        public FileList getFiles();
+        public void setFiles(FileList files);
 
         @ConfigInject
         public BufferAllocator getBufferAllocator();
@@ -82,7 +83,7 @@ public abstract class AbstractS3FileInputPlugin
         task.setFiles(listFiles(task));
 
         // number of processors is same with number of files
-        return resume(task.dump(), task.getFiles().size(), control);
+        return resume(task.dump(), task.getFiles().getTaskCount(), control);
     }
 
     @Override
@@ -101,16 +102,7 @@ public abstract class AbstractS3FileInputPlugin
         ConfigDiff configDiff = Exec.newConfigDiff();
 
         // last_path
-        if (task.getFiles().isEmpty()) {
-            // keep the last value
-            if (task.getLastPath().isPresent()) {
-                configDiff.set("last_path", task.getLastPath().get());
-            }
-        } else {
-            List<String> files = new ArrayList<String>(task.getFiles());
-            Collections.sort(files);
-            configDiff.set("last_path", files.get(files.size() - 1));
-        }
+        configDiff.set("last_path", task.getFiles().getLastPath(task.getLastPath()));
 
         return configDiff;
     }
@@ -145,7 +137,7 @@ public abstract class AbstractS3FileInputPlugin
         return clientConfig;
     }
 
-    private List<String> listFiles(PluginTask task)
+    private FileList listFiles(PluginTask task)
     {
         AmazonS3Client client = newS3Client(task);
         String bucketName = task.getBucket();
@@ -154,7 +146,10 @@ public abstract class AbstractS3FileInputPlugin
             log.info("Listing files with prefix \"/\". This doesn't mean all files in a bucket. If you intend to read all files, use \"path_prefix: ''\" (empty string) instead.");
         }
 
-        return listS3FilesByPrefix(client, bucketName, task.getPathPrefix(), task.getLastPath());
+        FileList.Builder builder = new FileList.Builder(task);
+        listS3FilesByPrefix(builder, client, bucketName,
+                task.getPathPrefix(), task.getLastPath());
+        return builder.build();
     }
 
     /**
@@ -162,24 +157,24 @@ public abstract class AbstractS3FileInputPlugin
      *
      * The resulting list does not include the file that's size == 0.
      */
-    public static List<String> listS3FilesByPrefix(AmazonS3Client client, String bucketName,
+    public static void listS3FilesByPrefix(FileList.Builder builder,
+            AmazonS3Client client, String bucketName,
             String prefix, Optional<String> lastPath)
     {
-        ImmutableList.Builder<String> builder = ImmutableList.builder();
-
         String lastKey = lastPath.orNull();
         do {
             ListObjectsRequest req = new ListObjectsRequest(bucketName, prefix, lastKey, null, 1024);
             ObjectListing ol = client.listObjects(req);
-            for(S3ObjectSummary s : ol.getObjectSummaries()) {
+            for (S3ObjectSummary s : ol.getObjectSummaries()) {
                 if (s.getSize() > 0) {
-                    builder.add(s.getKey());
+                    builder.add(s.getKey(), s.getSize());
+                    if (!builder.more()) {
+                        return;
+                    }
                 }
             }
             lastKey = ol.getNextMarker();
         } while(lastKey != null);
-
-        return builder.build();
     }
 
     @Override
@@ -283,24 +278,22 @@ public abstract class AbstractS3FileInputPlugin
     {
         private AmazonS3Client client;
         private final String bucket;
-        private final String key;
-        private boolean opened = false;
+        private final Iterator<String> iterator;
 
         public SingleFileProvider(PluginTask task, int taskIndex)
         {
             this.client = newS3Client(task);
             this.bucket = task.getBucket();
-            this.key = task.getFiles().get(taskIndex);
+            this.iterator = task.getFiles().get(taskIndex).iterator();
         }
 
         @Override
         public InputStream openNext() throws IOException
         {
-            if (opened) {
+            if (!iterator.hasNext()) {
                 return null;
             }
-            opened = true;
-            GetObjectRequest request = new GetObjectRequest(bucket, key);
+            GetObjectRequest request = new GetObjectRequest(bucket, iterator.next());
             S3Object obj = client.getObject(request);
             return new ResumableInputStream(obj.getObjectContent(), new S3InputStreamReopener(client, request, obj.getObjectMetadata().getContentLength()));
         }
