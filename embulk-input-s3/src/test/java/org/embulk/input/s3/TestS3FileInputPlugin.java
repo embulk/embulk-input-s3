@@ -72,7 +72,9 @@ public class TestS3FileInputPlugin
         doReturn("in/file/").doReturn(null).when(ol).getNextMarker();
 
         // It counts only size != 0 files.
-        assertEquals(1, S3FileInputPlugin.listS3FilesByPrefix(client, "bucketName", "prefix", Optional.<String>absent()).size());
+        FileList.Builder builder = new FileList.Builder();
+        S3FileInputPlugin.listS3FilesByPrefix(builder, client, "bucketName", "prefix", Optional.<String>absent());
+        assertEquals(1, builder.size());
     }
 
     @Test
@@ -90,7 +92,7 @@ public class TestS3FileInputPlugin
                 public List<TaskReport> run(TaskSource taskSource, int taskCount)
                 {
                     assertEquals(3, taskCount);
-                    List<String> files = taskSource.loadTask(S3PluginTask.class).getFiles();
+                    List<String> files = fileListToList(taskSource.loadTask(S3PluginTask.class).getFiles());
                     assertArrayEquals(new String[]{"in/aa/a", "in/aa/b", "in/aa/c"}, files.toArray(new String[files.size()]));
                     return emptyTaskReports(taskCount);
                 }
@@ -108,12 +110,12 @@ public class TestS3FileInputPlugin
                 public List<TaskReport> run(TaskSource taskSource, int taskCount)
                 {
                     assertEquals(0, taskCount);
-                    assertTrue(taskSource.loadTask(S3PluginTask.class).getFiles().isEmpty());
+                    assertTrue(fileListToList(taskSource.loadTask(S3PluginTask.class).getFiles()).isEmpty());
                     return emptyTaskReports(taskCount);
                 }
             });
 
-            assertFalse(configDiff.has("last_path"));
+            assertEquals(null, configDiff.get(String.class, "last_path", null));
         }
 
         { // if files are empty, keep the previous last_path.
@@ -126,7 +128,7 @@ public class TestS3FileInputPlugin
                 @Override
                 public List<TaskReport> run(TaskSource taskSource, int taskCount) {
                     assertEquals(0, taskCount);
-                    assertTrue(taskSource.loadTask(S3PluginTask.class).getFiles().isEmpty());
+                    assertTrue(fileListToList(taskSource.loadTask(S3PluginTask.class).getFiles()).isEmpty());
                     return emptyTaskReports(taskCount);
                 }
             });
@@ -143,7 +145,9 @@ public class TestS3FileInputPlugin
         doReturn(client).when(plugin).newS3Client(any(PluginTask.class));
 
         PluginTask task = config.loadConfig(plugin.getTaskClass());
-        task.setFiles(Arrays.asList(new String[]{"in/aa/a"}));
+        FileList.Builder builder = new FileList.Builder();
+        builder.add("in/aa/a", 100);
+        task.setFiles(builder.build());
 
         StringBuilder sbuf = new StringBuilder();
         try (S3FileInput input = (S3FileInput) plugin.open(task.dump(), 0)) {
@@ -217,5 +221,16 @@ public class TestS3FileInputPlugin
             reports.add(Exec.newTaskReport());
         }
         return reports.build();
+    }
+
+    private static List<String> fileListToList(FileList list)
+    {
+        ImmutableList.Builder<String> builder = ImmutableList.builder();
+        for (int i=0; i < list.getTaskCount(); i++) {
+            for (String path : list.get(i)) {
+                builder.add(path);
+            }
+        }
+        return builder.build();
     }
 }
