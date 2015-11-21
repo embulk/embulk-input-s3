@@ -8,10 +8,12 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.InputStream;
 
+import com.amazonaws.services.s3.model.Bucket;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
+import org.embulk.config.ConfigException;
 import org.slf4j.Logger;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
@@ -142,6 +144,10 @@ public abstract class AbstractS3FileInputPlugin
         AmazonS3Client client = newS3Client(task);
         String bucketName = task.getBucket();
 
+        if (!containsS3Bucket(client, bucketName)) {
+            throw new ConfigException(String.format("The specified bucket %s does not exist", bucketName));
+        }
+
         if (task.getPathPrefix().equals("/")) {
             log.info("Listing files with prefix \"/\". This doesn't mean all files in a bucket. If you intend to read all files, use \"path_prefix: ''\" (empty string) instead.");
         }
@@ -150,6 +156,17 @@ public abstract class AbstractS3FileInputPlugin
         listS3FilesByPrefix(builder, client, bucketName,
                 task.getPathPrefix(), task.getLastPath());
         return builder.build();
+    }
+
+    private static boolean containsS3Bucket(AmazonS3Client client, String bucketName)
+    {
+        List<Bucket> buckets = client.listBuckets();
+        for (Bucket bucket : buckets) {
+            if (bucket.getName().equals(bucketName)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
