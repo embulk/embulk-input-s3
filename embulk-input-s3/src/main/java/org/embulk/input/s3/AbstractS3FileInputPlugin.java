@@ -22,6 +22,7 @@ import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.ClientConfiguration;
+import com.amazonaws.AmazonServiceException;
 import com.amazonaws.Protocol;
 import org.embulk.config.Config;
 import org.embulk.config.ConfigInject;
@@ -31,6 +32,7 @@ import org.embulk.config.TaskSource;
 import org.embulk.config.ConfigSource;
 import org.embulk.config.ConfigDiff;
 import org.embulk.config.TaskReport;
+import org.embulk.config.ConfigException;
 import org.embulk.spi.BufferAllocator;
 import org.embulk.spi.Exec;
 import org.embulk.spi.FileInputPlugin;
@@ -139,17 +141,29 @@ public abstract class AbstractS3FileInputPlugin
 
     private FileList listFiles(PluginTask task)
     {
-        AmazonS3Client client = newS3Client(task);
-        String bucketName = task.getBucket();
+        try {
+            AmazonS3Client client = newS3Client(task);
+            String bucketName = task.getBucket();
 
-        if (task.getPathPrefix().equals("/")) {
-            log.info("Listing files with prefix \"/\". This doesn't mean all files in a bucket. If you intend to read all files, use \"path_prefix: ''\" (empty string) instead.");
+            if (task.getPathPrefix().equals("/")) {
+                log.info("Listing files with prefix \"/\". This doesn't mean all files in a bucket. If you intend to read all files, use \"path_prefix: ''\" (empty string) instead.");
+            }
+
+            FileList.Builder builder = new FileList.Builder(task);
+            listS3FilesByPrefix(builder, client, bucketName,
+                    task.getPathPrefix(), task.getLastPath());
+            return builder.build();
         }
-
-        FileList.Builder builder = new FileList.Builder(task);
-        listS3FilesByPrefix(builder, client, bucketName,
-                task.getPathPrefix(), task.getLastPath());
-        return builder.build();
+        catch (AmazonServiceException ex) {
+            if (ex.getErrorType().equals(AmazonServiceException.ErrorType.Client)) {
+                // HTTP 40x errors. auth error, bucket doesn't exist, etc. See AWS document for the full list:
+                // http://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html
+                if (ex.getStatusCode() != 400) {  // 404 Bad Request is unexpected error
+                    throw new ConfigException(ex);
+                }
+            }
+            throw ex;
+        }
     }
 
     /**
