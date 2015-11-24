@@ -2,6 +2,9 @@ package org.embulk.input.s3;
 
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import org.embulk.EmbulkTestRuntime;
 import org.embulk.input.s3.AbstractS3FileInputPlugin.S3InputStreamReopener;
 import org.junit.Before;
@@ -9,11 +12,11 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
 import static org.junit.Assert.assertEquals;
-import static org.embulk.input.s3.TestS3FileInputPlugin.s3object;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -59,5 +62,15 @@ public class TestS3InputStreamReopener
                 assertEquals("value", r.readLine());
             }
         }
+    }
+
+    static S3Object s3object(String key, String value)
+    {
+        S3Object o = new S3Object();
+        o.setObjectContent(new S3ObjectInputStream(new ByteArrayInputStream(value.getBytes()), null));
+        ObjectMetadata om = new ObjectMetadata();
+        om.setContentLength(value.length());
+        o.setObjectMetadata(om);
+        return o;
     }
 }
