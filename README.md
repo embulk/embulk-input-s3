@@ -93,3 +93,11 @@ in:
 ./gradlew gem
 ```
 
+## Test
+
+To run unit tests, we need to configure the following environment variables.
+```
+EMBULK_S3_TEST_BUCKET
+EMBULK_S3_TEST_ACCESS_KEY_ID
+EMBULK_S3_TEST_SECRET_ACCESS_KEY
+```

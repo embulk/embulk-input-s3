@@ -35,9 +35,11 @@ subprojects {
         provided "org.embulk:embulk-core:0.7.9"
         compile "com.amazonaws:aws-java-sdk-s3:1.10.33"
         runtime "org.slf4j:jcl-over-slf4j:1.7.12"  // aws-sdk uses Apache Commons Logging and Embulk uses slf4j
+        testCompile "com.amazonaws:aws-java-sdk-sts:1.10.33"
         testCompile "junit:junit:4.+"
         testCompile "org.mockito:mockito-core:1.+"
-        testCompile  "org.embulk:embulk-core:0.7.0:tests"
+        testCompile "org.embulk:embulk-standards:0.7.9"
+        testCompile "org.embulk:embulk-core:0.7.9:tests"
     }
 
     gradle.projectsEvaluated {
