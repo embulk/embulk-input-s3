@@ -5,6 +5,8 @@ import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.BufferedOutputStream;
@@ -29,6 +31,10 @@ public class FileList
 {
     public interface Task
     {
+        @Config("path_match_pattern")
+        @ConfigDefault("\".*\"")
+        String getPathMatchPattern();
+
         @Config("total_file_count_limit")
         @ConfigDefault("2147483647")
         int getTotalFileCountLimit();
@@ -63,17 +69,21 @@ public class FileList
         private String last = null;
 
         private int limitCount = Integer.MAX_VALUE;
+        private Pattern pathMatchPattern;
+
         private final ByteBuffer castBuffer = ByteBuffer.allocate(4);
 
         public Builder(Task task)
         {
             this();
             this.limitCount = task.getTotalFileCountLimit();
+            this.pathMatchPattern = Pattern.compile(task.getPathMatchPattern());
         }
 
         public Builder(ConfigSource config)
         {
             this();
+            this.pathMatchPattern = Pattern.compile(config.get(String.class, "path_match_pattern", ".*"));
             this.limitCount = config.get(int.class, "total_file_count_limit", Integer.MAX_VALUE);
         }
 
@@ -94,6 +104,12 @@ public class FileList
             return this;
         }
 
+        public Builder pathMatchPattern(String pattern)
+        {
+            this.pathMatchPattern = Pattern.compile(pattern);
+            return this;
+        }
+
         public int size()
         {
             return entries.size();
@@ -104,6 +120,7 @@ public class FileList
             return size() < limitCount;
         }
 
+        // returns true if this file is used
         public synchronized boolean add(String path, long size)
         {
             // TODO throw IllegalStateException if stream is already closed
@@ -112,8 +129,9 @@ public class FileList
                 return false;
             }
 
-            // TODO in the future, support some other filtering parameters (file name suffix filter, regex filter, etc)
-            //      and return false if filtered out.
+            if (!pathMatchPattern.matcher(path).matches()) {
+                return false;
+            }
 
             int index = entries.size();
             entries.add(new Entry(index, size));

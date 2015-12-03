@@ -53,6 +53,9 @@
 
     - **session_token**: session token (string, required)
 
+* **path_match_pattern**: regexp to match file paths. If a file path doesn't match with this pattern, the file will be skipped (regexp string, optional)
+
+* **total_file_count_limit**: maximum number of files to read (integer, optional)
 
 ## Example
 
@@ -64,6 +67,22 @@ in:
   endpoint: s3-us-west-1.amazonaws.com
   access_key_id: ABCXYZ123ABCXYZ123
   secret_access_key: AbCxYz123aBcXyZ123
+```
+
+To skip files using regexp:
+
+```yaml
+in:
+  type: s3
+  bucket: my-s3-bucket
+  path_prefix: logs/csv-
+  # ...
+  path_match_pattern: \.csv$   # a file will be skipped if its path doesn't match with this pattern
+
+  ## some examples of regexp:
+  #path_match_pattern: /archive/         # match files in .../archive/... directory
+  #path_match_pattern: /data1/|/data2/   # match files in .../data1/... or .../data2/... directory
+  #path_match_pattern: .csv$|.csv.gz$    # match files whose suffix is .csv or .csv.gz
 ```
 
 To use AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables:

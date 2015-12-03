@@ -115,6 +115,17 @@ public class TestS3FileInputPlugin
         assertEquals(0, getRecords(config, output).size());
     }
 
+    @Test
+    public void usePathMatchPattern()
+            throws Exception
+    {
+        ConfigSource config = this.config.deepCopy().set("path_match_pattern", "/match/");
+        ConfigDiff configDiff = runner.transaction(config, new Control(runner, output));
+
+        assertNull(configDiff.get(String.class, "last_path"));
+        assertEquals(0, getRecords(config, output).size());
+    }
+
     static class Control
             implements InputPlugin.Control
     {
