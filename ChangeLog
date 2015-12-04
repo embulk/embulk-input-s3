@@ -1,4 +1,9 @@
 
+Release 0.2.5 - 2015-12-03
+
+* Added "path_match_pattern" option. This option skips files if path name
+  doesn't match with the regexp pattern.
+
 Release 0.2.4 - 2015-11-18
 
 * Added "auth_method" option and basic, env, instance, profile, properties,
