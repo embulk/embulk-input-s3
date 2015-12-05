@@ -119,11 +119,22 @@ public class TestS3FileInputPlugin
     public void usePathMatchPattern()
             throws Exception
     {
-        ConfigSource config = this.config.deepCopy().set("path_match_pattern", "/match/");
-        ConfigDiff configDiff = runner.transaction(config, new Control(runner, output));
+        { // match pattern
+            ConfigSource config = this.config.deepCopy().set("path_match_pattern", "/sample_01");
+            ConfigDiff configDiff = runner.transaction(config, new Control(runner, output));
 
-        assertNull(configDiff.get(String.class, "last_path"));
-        assertEquals(0, getRecords(config, output).size());
+            assertEquals(EMBULK_S3_TEST_PATH_PREFIX + "/sample_01.csv", configDiff.get(String.class, "last_path"));
+            assertRecords(config, output);
+        }
+
+        output = new MockPageOutput();
+        { // not match pattern
+            ConfigSource config = this.config.deepCopy().set("path_match_pattern", "/match/");
+            ConfigDiff configDiff = runner.transaction(config, new Control(runner, output));
+
+            assertNull(configDiff.get(String.class, "last_path"));
+            assertEquals(0, getRecords(config, output).size());
+        }
     }
 
     static class Control

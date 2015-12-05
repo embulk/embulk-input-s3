@@ -129,7 +129,7 @@ public class FileList
                 return false;
             }
 
-            if (!pathMatchPattern.matcher(path).matches()) {
+            if (!pathMatchPattern.matcher(path).find()) {
                 return false;
             }
 
