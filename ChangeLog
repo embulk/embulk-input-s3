@@ -1,4 +1,8 @@
 
+Release 0.2.6 - 2015-12-05
+
+* Fixed "path_match_pattern" to match part of the file path.
+
 Release 0.2.5 - 2015-12-03
 
 * Added "path_match_pattern" option. This option skips files if path name
