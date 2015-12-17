@@ -38,6 +38,11 @@ public class FileList
         @Config("total_file_count_limit")
         @ConfigDefault("2147483647")
         int getTotalFileCountLimit();
+
+        // TODO support more algorithms to combine tasks
+        @Config("min_task_size")
+        @ConfigDefault("0")
+        long getMinTaskSize();
     }
 
     public static class Entry
@@ -69,6 +74,7 @@ public class FileList
         private String last = null;
 
         private int limitCount = Integer.MAX_VALUE;
+        private long minTaskSize = 1;
         private Pattern pathMatchPattern;
 
         private final ByteBuffer castBuffer = ByteBuffer.allocate(4);
@@ -76,8 +82,9 @@ public class FileList
         public Builder(Task task)
         {
             this();
-            this.limitCount = task.getTotalFileCountLimit();
             this.pathMatchPattern = Pattern.compile(task.getPathMatchPattern());
+            this.limitCount = task.getTotalFileCountLimit();
+            this.minTaskSize = task.getMinTaskSize();
         }
 
         public Builder(ConfigSource config)
@@ -85,6 +92,7 @@ public class FileList
             this();
             this.pathMatchPattern = Pattern.compile(config.get(String.class, "path_match_pattern", ".*"));
             this.limitCount = config.get(int.class, "total_file_count_limit", Integer.MAX_VALUE);
+            this.minTaskSize = config.get(long.class, "min_task_size", 0L);
         }
 
         public Builder()
@@ -101,6 +109,12 @@ public class FileList
         public Builder limitTotalFileCount(int limitCount)
         {
             this.limitCount = limitCount;
+            return this;
+        }
+
+        public Builder minTaskSize(long bytes)
+        {
+            this.minTaskSize = bytes;
             return this;
         }
 
@@ -163,10 +177,20 @@ public class FileList
 
         private List<List<Entry>> getSplits(List<Entry> all)
         {
-            // TODO combine multiple entries into one task using some configuration parameters
             List<List<Entry>> tasks = new ArrayList<>();
+            long currentTaskSize = 0;
+            List<Entry> currentTask = new ArrayList<>();
             for (Entry entry : all) {
-                tasks.add(ImmutableList.of(entry));
+                currentTask.add(entry);
+                currentTaskSize += entry.getSize();  // TODO consider to multiply the size by cost_per_byte, and add cost_per_file
+                if (currentTaskSize >= minTaskSize) {
+                    tasks.add(currentTask);
+                    currentTask = new ArrayList<>();
+                    currentTaskSize = 0;
+                }
+            }
+            if (!currentTask.isEmpty()) {
+                tasks.add(currentTask);
             }
             return tasks;
         }
