@@ -57,6 +57,8 @@
 
 * **total_file_count_limit**: maximum number of files to read (integer, optional)
 
+* **min_task_size** (experimental): minimum size of a task. If this is larger than 0, one task includes multiple input files. This is useful if too many number of tasks impacts performance of output or executor plugins badly. (integer, optional)
+
 ## Example
 
 ```yaml
