@@ -26,6 +26,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonCreator;
 
+import javax.validation.constraints.Min;
+
 // this class should be moved to embulk-core
 public class FileList
 {
@@ -38,6 +40,11 @@ public class FileList
         @Config("total_file_count_limit")
         @ConfigDefault("2147483647")
         int getTotalFileCountLimit();
+
+        @Config("total_task_count_limit")
+        @ConfigDefault("2147483647")
+        @Min(1)
+        int getTotalTaskCountLimit();
     }
 
     public static class Entry
@@ -67,9 +74,11 @@ public class FileList
         private final OutputStream stream;
         private final List<Entry> entries = new ArrayList<>();
         private String last = null;
+        private long totalSize = 0;
 
         private int limitCount = Integer.MAX_VALUE;
         private Pattern pathMatchPattern;
+        private int taskLimitCount;
 
         private final ByteBuffer castBuffer = ByteBuffer.allocate(4);
 
@@ -78,6 +87,7 @@ public class FileList
             this();
             this.limitCount = task.getTotalFileCountLimit();
             this.pathMatchPattern = Pattern.compile(task.getPathMatchPattern());
+            this.taskLimitCount = task.getTotalTaskCountLimit();
         }
 
         public Builder(ConfigSource config)
@@ -85,6 +95,7 @@ public class FileList
             this();
             this.pathMatchPattern = Pattern.compile(config.get(String.class, "path_match_pattern", ".*"));
             this.limitCount = config.get(int.class, "total_file_count_limit", Integer.MAX_VALUE);
+            this.taskLimitCount = config.get(int.class, "total_task_count_limit", Integer.MAX_VALUE);
         }
 
         public Builder()
@@ -107,6 +118,12 @@ public class FileList
         public Builder pathMatchPattern(String pattern)
         {
             this.pathMatchPattern = Pattern.compile(pattern);
+            return this;
+        }
+
+        public Builder limitTotalTaskCount(int taskLimitCount)
+        {
+            this.taskLimitCount = taskLimitCount;
             return this;
         }
 
@@ -135,6 +152,7 @@ public class FileList
 
             int index = entries.size();
             entries.add(new Entry(index, size));
+            totalSize += size;
 
             byte[] data = path.getBytes(StandardCharsets.UTF_8);
             castBuffer.putInt(0, data.length);
@@ -163,11 +181,28 @@ public class FileList
 
         private List<List<Entry>> getSplits(List<Entry> all)
         {
-            // TODO combine multiple entries into one task using some configuration parameters
+            long averageSize = totalSize / taskLimitCount;
             List<List<Entry>> tasks = new ArrayList<>();
-            for (Entry entry : all) {
-                tasks.add(ImmutableList.of(entry));
+
+            // need to suffle entries?
+
+            long size = 0;
+            List<Entry> task = new ArrayList<>();
+
+            for (Entry e : all) {
+                size += e.getSize();
+                task.add(e);
+                if (size >= averageSize) {
+                    tasks.add(task);
+                    size = 0;
+                    task = new ArrayList<>();
+                }
             }
+
+            if (size != 0) {
+                tasks.add(task);
+            }
+
             return tasks;
         }
     }
