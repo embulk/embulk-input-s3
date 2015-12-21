@@ -1,4 +1,8 @@
 
+Release 0.2.7 - 2015-12-21
+
+* Added "min_task_size" option.
+
 Release 0.2.6 - 2015-12-05
 
 * Fixed "path_match_pattern" to match part of the file path.
