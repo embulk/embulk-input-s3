@@ -53,6 +53,60 @@
 
     - **session_token**: session token (string, required)
 
+- **client_config**: configure S3 client config (optional)
+
+  - **protocol**: (enum, `HTTP` or `HTTPS`, optional)
+
+  - **max_connections**: (int, optional)
+
+  - **user_agent** (string, optional)
+
+  - **local_address**: name of a hostname (string, optional)
+
+  - **proxy_host**: name of a hostname (string, optional)
+
+  - **proxy_port**: (int, optional)
+
+  - **proxy_username**: (string, optional)
+
+  - **proxy_password**: (string, optional)
+
+  - **proxy_domain**: (string, optional)
+
+  - **proxy_workstation**: (string, optional)
+
+  - **max_error_retry**: (int, optional)
+
+  - **socket_timeout**: (int, optional)
+
+  - **connection_timeout**: (int, optional)
+
+  - **request_timeout**: (int, optional)
+
+  - **use_reaper**: (boolean, optional)
+
+  - **use_gzip**: (boolean, optional)
+
+  - **signer_override**: (string, optional)
+
+  - **preemptive_basic_proxy_auth**: (boolean, optional)
+
+  - **connection_ttl**: (long, optional)
+
+  - **connection_max_idle_millis**: (long, optional)
+
+  - **use_tcp_keep_alive**: (boolean, optional)
+
+  - **response_metadata_cache_size**: (int, optional)
+
+  - **use_expect_continue**: (boolean, optional)
+
+  - **secure_random**: (optional)
+
+    - **algorithm**: (string, required)
+
+    - **provider**: (string, optional)
+
 * **path_match_pattern**: regexp to match file paths. If a file path doesn't match with this pattern, the file will be skipped (regexp string, optional)
 
 * **total_file_count_limit**: maximum number of files to read (integer, optional)
