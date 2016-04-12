@@ -17,9 +17,6 @@ import static org.embulk.input.s3.TestS3FileInputPlugin.parserConfig;
 import static org.embulk.input.s3.TestS3FileInputPlugin.schemaConfig;
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by takahiro.nakayama on 3/30/16.
- */
 public class TestClientConfigurationConfigurable
 {
     @Rule
@@ -56,14 +53,14 @@ public class TestClientConfigurationConfigurable
     public void setTwoParam()
     {
         config.setNested("client_config", Exec.newConfigSource()
-        .set("socket_send_buffer_size_hints", 4)
-        .set("socket_receive_buffer_size_hints", 8));
+        .set("socket_send_buffer_size_hint", "1MB")
+        .set("socket_receive_buffer_size_hint", "1MB"));
 
         ClientConfiguration clientConfiguration = getClientConfiguration();
 
         int[] socketBufferSizeHints = clientConfiguration.getSocketBufferSizeHints();
-        assertEquals(4, socketBufferSizeHints[0]);
-        assertEquals(8, socketBufferSizeHints[1]);
+        assertEquals(1 << 20, socketBufferSizeHints[0]);
+        assertEquals(1 << 20, socketBufferSizeHints[1]);
     }
 
     @Test

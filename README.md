@@ -53,11 +53,17 @@
 
     - **session_token**: session token (string, required)
 
+* **path_match_pattern**: regexp to match file paths. If a file path doesn't match with this pattern, the file will be skipped (regexp string, optional)
+
+* **total_file_count_limit**: maximum number of files to read (integer, optional)
+
+* **min_task_size** (experimental): minimum bytesize of a task. If this is larger than 0, one task includes multiple input files up until it becomes the bytesize in total. This is useful if too many number of tasks impacts performance of output or executor plugins badly. (integer, optional)
+
 - **client_config**: configure S3 client config (optional)
 
-  - **protocol**: (enum, `HTTP` or `HTTPS`, optional)
+  - **protocol**: (enum, `HTTP` or `HTTPS`. default: `"HTTPS"`)
 
-  - **max_connections**: (int, optional)
+  - **max_connections**: (int, default: `50`)
 
   - **user_agent** (string, optional)
 
@@ -75,13 +81,13 @@
 
   - **proxy_workstation**: (string, optional)
 
-  - **max_error_retry**: (int, optional)
+  - **max_error_retry**: (int, default: `3`)
 
-  - **socket_timeout**: (int, optional)
+  - **socket_timeout**: (duration, default: `8min`)
 
-  - **connection_timeout**: (int, optional)
+  - **connection_timeout**: (duration, default: `50sec`)
 
-  - **request_timeout**: (int, optional)
+  - **request_timeout**: (duration, default: no timeout)
 
   - **use_reaper**: (boolean, optional)
 
@@ -91,13 +97,13 @@
 
   - **preemptive_basic_proxy_auth**: (boolean, optional)
 
-  - **connection_ttl**: (long, optional)
+  - **connection_ttl**: (duration, optional)
 
-  - **connection_max_idle_millis**: (long, optional)
+  - **connection_max_idle**: (duration, default: `60sec`)
 
   - **use_tcp_keep_alive**: (boolean, optional)
 
-  - **response_metadata_cache_size**: (int, optional)
+  - **response_metadata_cache_size**: (bytesize, optional)
 
   - **use_expect_continue**: (boolean, optional)
 
@@ -107,11 +113,10 @@
 
     - **provider**: (string, optional)
 
-* **path_match_pattern**: regexp to match file paths. If a file path doesn't match with this pattern, the file will be skipped (regexp string, optional)
+  - **socket_send_buffer_size_hint**: (bytesize, optional)
 
-* **total_file_count_limit**: maximum number of files to read (integer, optional)
+  - **socket_receive_buffer_size_hint**: (bytesize, optional)
 
-* **min_task_size** (experimental): minimum bytesize of a task. If this is larger than 0, one task includes multiple input files up until it becomes the bytesize in total. This is useful if too many number of tasks impacts performance of output or executor plugins badly. (integer, optional)
 
 ## Example
 

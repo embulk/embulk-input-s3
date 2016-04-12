@@ -62,7 +62,7 @@ public abstract class AbstractS3FileInputPlugin
 
         @Config("client_config")
         @ConfigDefault("{}")
-        public ClientConfigurationConfigurable.Task getClientConfigurationConfigurableTask();
+        public AwsClientConfigurationsTask getClientConfig();
 
         public FileList getFiles();
         public void setFiles(FileList files);
@@ -126,8 +126,7 @@ public abstract class AbstractS3FileInputPlugin
 
     protected ClientConfiguration getClientConfiguration(PluginTask task)
     {
-        ClientConfigurationConfigurable.Task configurableTask = task.getClientConfigurationConfigurableTask();
-        return ClientConfigurationConfigurable.getClientConfiguration(configurableTask);
+        return AwsClientConfigurations.getClientConfiguration(task.getClientConfig());
     }
 
     private FileList listFiles(PluginTask task)
