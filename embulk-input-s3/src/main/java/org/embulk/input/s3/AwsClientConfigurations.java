@@ -12,7 +12,7 @@ import java.security.SecureRandom;
 
 public class AwsClientConfigurations
 {
-    public static ClientConfiguration getClientConfiguration(AwsClientConfigurationsTask task)
+    public static ClientConfiguration getClientConfiguration(AwsClientConfigurationTask task)
     {
         ClientConfiguration c = new ClientConfiguration();
 
@@ -100,7 +100,7 @@ public class AwsClientConfigurations
 
         if (task.getSecureRandom().isPresent()) {
             try {
-                AwsClientConfigurationsTask.SecureRandomTask secureRandomTask = task.getSecureRandom().get();
+                AwsClientConfigurationTask.SecureRandomTask secureRandomTask = task.getSecureRandom().get();
                 SecureRandom rand =
                     secureRandomTask.getProvider().isPresent()
                     ?  SecureRandom.getInstance(secureRandomTask.getAlgorithm(), secureRandomTask.getProvider().get())

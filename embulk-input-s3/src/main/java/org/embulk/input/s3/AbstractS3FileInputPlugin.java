@@ -62,7 +62,7 @@ public abstract class AbstractS3FileInputPlugin
 
         @Config("client_config")
         @ConfigDefault("{}")
-        public AwsClientConfigurationsTask getClientConfig();
+        public AwsClientConfigurationTask getClientConfig();
 
         public FileList getFiles();
         public void setFiles(FileList files);

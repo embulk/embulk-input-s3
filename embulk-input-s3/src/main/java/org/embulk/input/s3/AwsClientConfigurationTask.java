@@ -7,7 +7,7 @@ import org.embulk.config.ConfigDefault;
 import org.embulk.config.Task;
 import org.embulk.spi.unit.ByteSize;
 
-public interface AwsClientConfigurationsTask
+public interface AwsClientConfigurationTask
     extends Task
 {
     // NOTE: Can use `client_execution_timeout` from v1.10.65
