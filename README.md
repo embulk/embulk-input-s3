@@ -59,6 +59,65 @@
 
 * **min_task_size** (experimental): minimum bytesize of a task. If this is larger than 0, one task includes multiple input files up until it becomes the bytesize in total. This is useful if too many number of tasks impacts performance of output or executor plugins badly. (integer, optional)
 
+- **client_config**: configure S3 client config (optional)
+
+  - **protocol**: (enum, `HTTP` or `HTTPS`. default: `"HTTPS"`)
+
+  - **max_connections**: (int, default: `50`)
+
+  - **user_agent** (string, optional)
+
+  - **local_address**: name of a hostname (string, optional)
+
+  - **proxy_host**: name of a hostname (string, optional)
+
+  - **proxy_port**: (int, optional)
+
+  - **proxy_username**: (string, optional)
+
+  - **proxy_password**: (string, optional)
+
+  - **proxy_domain**: (string, optional)
+
+  - **proxy_workstation**: (string, optional)
+
+  - **max_error_retry**: (int, default: `3`)
+
+  - **socket_timeout**: (duration, default: `8min`)
+
+  - **connection_timeout**: (duration, default: `50sec`)
+
+  - **request_timeout**: (duration, default: no timeout)
+
+  - **use_reaper**: (boolean, optional)
+
+  - **use_gzip**: (boolean, optional)
+
+  - **signer_override**: (string, optional)
+
+  - **preemptive_basic_proxy_auth**: (boolean, optional)
+
+  - **connection_ttl**: (duration, optional)
+
+  - **connection_max_idle**: (duration, default: `60sec`)
+
+  - **use_tcp_keep_alive**: (boolean, optional)
+
+  - **response_metadata_cache_size**: (bytesize, optional)
+
+  - **use_expect_continue**: (boolean, optional)
+
+  - **secure_random**: (optional)
+
+    - **algorithm**: (string, required)
+
+    - **provider**: (string, optional)
+
+  - **socket_send_buffer_size_hint**: (bytesize, optional)
+
+  - **socket_receive_buffer_size_hint**: (bytesize, optional)
+
+
 ## Example
 
 ```yaml

@@ -19,6 +19,7 @@ import java.nio.charset.StandardCharsets;
 import org.embulk.config.Config;
 import org.embulk.config.ConfigDefault;
 import org.embulk.config.ConfigSource;
+import org.embulk.spi.unit.ByteSize;
 import com.google.common.base.Throwables;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -42,7 +43,7 @@ public class FileList
         // TODO support more algorithms to combine tasks
         @Config("min_task_size")
         @ConfigDefault("0")
-        long getMinTaskSize();
+        ByteSize getMinTaskSize();
     }
 
     public static class Entry
@@ -74,7 +75,7 @@ public class FileList
         private String last = null;
 
         private int limitCount = Integer.MAX_VALUE;
-        private long minTaskSize = 1;
+        private long minTaskSize = 0;
         private Pattern pathMatchPattern;
 
         private final ByteBuffer castBuffer = ByteBuffer.allocate(4);
@@ -84,7 +85,7 @@ public class FileList
             this();
             this.pathMatchPattern = Pattern.compile(task.getPathMatchPattern());
             this.limitCount = task.getTotalFileCountLimit();
-            this.minTaskSize = task.getMinTaskSize();
+            this.minTaskSize = task.getMinTaskSize().getBytes();
         }
 
         public Builder(ConfigSource config)
@@ -92,7 +93,7 @@ public class FileList
             this();
             this.pathMatchPattern = Pattern.compile(config.get(String.class, "path_match_pattern", ".*"));
             this.limitCount = config.get(int.class, "total_file_count_limit", Integer.MAX_VALUE);
-            this.minTaskSize = config.get(long.class, "min_task_size", 0L);
+            this.minTaskSize = config.get(ByteSize.class, "min_task_size", new ByteSize(0)).getBytes();
         }
 
         public Builder()

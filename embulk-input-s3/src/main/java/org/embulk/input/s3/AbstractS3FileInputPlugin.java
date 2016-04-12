@@ -1,19 +1,15 @@
 package org.embulk.input.s3;
 
 import java.util.List;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.InputStream;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableList;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import org.slf4j.Logger;
-import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
@@ -23,7 +19,6 @@ import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.AmazonServiceException;
-import com.amazonaws.Protocol;
 import org.embulk.config.Config;
 import org.embulk.config.ConfigInject;
 import org.embulk.config.ConfigDefault;
@@ -65,7 +60,9 @@ public abstract class AbstractS3FileInputPlugin
         @ConfigDefault("null")
         public Optional<String> getAccessKeyId();
 
-        // TODO timeout, ssl, etc
+        @Config("client_config")
+        @ConfigDefault("{}")
+        public AwsClientConfigurationTask getClientConfig();
 
         public FileList getFiles();
         public void setFiles(FileList files);
@@ -129,14 +126,7 @@ public abstract class AbstractS3FileInputPlugin
 
     protected ClientConfiguration getClientConfiguration(PluginTask task)
     {
-        ClientConfiguration clientConfig = new ClientConfiguration();
-
-        //clientConfig.setProtocol(Protocol.HTTP);
-        clientConfig.setMaxConnections(50); // SDK default: 50
-        clientConfig.setMaxErrorRetry(3); // SDK default: 3
-        clientConfig.setSocketTimeout(8*60*1000); // SDK default: 50*1000
-
-        return clientConfig;
+        return AwsClientConfigurations.getClientConfiguration(task.getClientConfig());
     }
 
     private FileList listFiles(PluginTask task)
