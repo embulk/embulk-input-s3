@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assume.assumeNotNull;
 
@@ -89,6 +90,15 @@ public class TestS3FileInputPlugin
 
         assertEquals(EMBULK_S3_TEST_PATH_PREFIX + "/sample_01.csv", configDiff.get(String.class, "last_path"));
         assertEquals(0, getRecords(config, output).size());
+    }
+
+    @Test
+    public void useIncremental()
+    {
+        ConfigSource config = this.config.deepCopy().set("incremental", false);
+        ConfigDiff configDiff = runner.transaction(config, new Control(runner, output));
+
+        assertFalse(configDiff.has("last_path"));
     }
 
     @Test
