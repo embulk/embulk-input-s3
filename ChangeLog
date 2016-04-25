@@ -1,4 +1,8 @@
 
+Release 0.2.8 - 2016-04-25
+
+* Added "incremental" option.
+
 Release 0.2.7 - 2015-12-21
 
 * Added "min_task_size" option.
