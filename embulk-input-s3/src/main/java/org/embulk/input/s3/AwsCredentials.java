@@ -140,7 +140,7 @@ public abstract class AwsCredentials
             }
 
         default:
-            throw new ConfigException(String.format("Unknwon auth_method '%s'. Supported methods are basic, instance, profile, properties, anonymous, and session.",
+            throw new ConfigException(String.format("Unknown auth_method '%s'. Supported methods are basic, instance, profile, properties, anonymous, and session.",
                         task.getAuthMethod()));
         }
     }
