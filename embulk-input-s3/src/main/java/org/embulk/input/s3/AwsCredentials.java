@@ -31,7 +31,7 @@ public abstract class AwsCredentials
                 final Logger log = Exec.getLogger(AwsCredentials.class);
                 log.warn("Both access_key_id and secret_access_key are not set. Assuming that 'auth_method: anonymous' option is set.");
                 log.warn("If you intentionally use anonymous authentication, please set 'auth_method: anonymous' option.");
-                log.warn("This behavior will be removed in a futurte release.");
+                log.warn("This behavior will be removed in a future release.");
                 reject(task.getSessionToken(), "session_token");
                 reject(task.getProfileFile(), "profile_file");
                 reject(task.getProfileName(), "profile_name");
