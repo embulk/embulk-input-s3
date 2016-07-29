@@ -1,4 +1,4 @@
-package org.embulk.input.s3;
+package org.embulk.util.aws.credentials;
 
 import com.google.common.base.Optional;
 import com.amazonaws.auth.AWSCredentials;
@@ -22,19 +22,37 @@ public abstract class AwsCredentials
 {
     private AwsCredentials() { }
 
+    public static AWSCredentialsProvider getAWSCredentialsProvider(AwsCredentialsTaskWithPrefix task)
+    {
+        return getAWSCredentialsProvider("aws_", task);
+    }
+
     public static AWSCredentialsProvider getAWSCredentialsProvider(AwsCredentialsTask task)
     {
+        return getAWSCredentialsProvider("", task);
+    }
+
+    private static AWSCredentialsProvider getAWSCredentialsProvider(String prefix, AwsCredentialsConfig task)
+    {
+        String authMethodOption = prefix + "auth_method";
+        String sessionTokenOption = prefix + "session_token";
+        String profileFileOption = prefix + "profile_file";
+        String profileNameOption = prefix + "profile_name";
+        String accessKeyIdOption = prefix + "access_key_id";
+        String secretAccessKeyOption = prefix + "secret_access_key";
+
         switch (task.getAuthMethod()) {
         case "basic":
             // for backward compatibility
             if (!task.getAccessKeyId().isPresent() && !task.getAccessKeyId().isPresent()) {
                 final Logger log = Exec.getLogger(AwsCredentials.class);
-                log.warn("Both access_key_id and secret_access_key are not set. Assuming that 'auth_method: anonymous' option is set.");
+                log.warn("Both '{}' and '{}' are not set. Assuming that '{}: anonymous' option is set.",
+                        accessKeyIdOption, secretAccessKeyOption, authMethodOption);
                 log.warn("If you intentionally use anonymous authentication, please set 'auth_method: anonymous' option.");
                 log.warn("This behavior will be removed in a future release.");
-                reject(task.getSessionToken(), "session_token");
-                reject(task.getProfileFile(), "profile_file");
-                reject(task.getProfileName(), "profile_name");
+                reject(task.getSessionToken(), sessionTokenOption);
+                reject(task.getProfileFile(), profileFileOption);
+                reject(task.getProfileName(), profileNameOption);
                 return new AWSCredentialsProvider() {
                     public AWSCredentials getCredentials()
                     {
@@ -47,9 +65,9 @@ public abstract class AwsCredentials
             else {
                 String accessKeyId = require(task.getAccessKeyId(), "'access_key_id', 'secret_access_key'");
                 String secretAccessKey = require(task.getSecretAccessKey(), "'secret_access_key'");
-                reject(task.getSessionToken(), "session_token");
-                reject(task.getProfileFile(), "profile_file");
-                reject(task.getProfileName(), "profile_name");
+                reject(task.getSessionToken(), sessionTokenOption);
+                reject(task.getProfileFile(), profileFileOption);
+                reject(task.getProfileName(), profileNameOption);
                 final BasicAWSCredentials creds = new BasicAWSCredentials(accessKeyId, secretAccessKey);
                 return new AWSCredentialsProvider() {
                     public AWSCredentials getCredentials()
@@ -62,26 +80,26 @@ public abstract class AwsCredentials
             }
 
         case "env":
-            reject(task.getAccessKeyId(), "access_key_id");
-            reject(task.getSecretAccessKey(), "secret_access_key");
-            reject(task.getSessionToken(), "session_token");
-            reject(task.getProfileFile(), "profile_file");
-            reject(task.getProfileName(), "profile_name");
+            reject(task.getAccessKeyId(), accessKeyIdOption);
+            reject(task.getSecretAccessKey(), secretAccessKeyOption);
+            reject(task.getSessionToken(), sessionTokenOption);
+            reject(task.getProfileFile(), profileFileOption);
+            reject(task.getProfileName(), profileNameOption);
             return overwriteBasicCredentials(task, new EnvironmentVariableCredentialsProvider().getCredentials());
 
         case "instance":
-            reject(task.getAccessKeyId(), "access_key_id");
-            reject(task.getSecretAccessKey(), "secret_access_key");
-            reject(task.getSessionToken(), "session_token");
-            reject(task.getProfileFile(), "profile_file");
-            reject(task.getProfileName(), "profile_name");
+            reject(task.getAccessKeyId(), accessKeyIdOption);
+            reject(task.getSecretAccessKey(), secretAccessKeyOption);
+            reject(task.getSessionToken(), sessionTokenOption);
+            reject(task.getProfileFile(), profileFileOption);
+            reject(task.getProfileName(), profileNameOption);
             return new InstanceProfileCredentialsProvider();
 
         case "profile":
             {
-                reject(task.getAccessKeyId(), "access_key_id");
-                reject(task.getSecretAccessKey(), "secret_access_key");
-                reject(task.getSessionToken(), "session_token");
+                reject(task.getAccessKeyId(), accessKeyIdOption);
+                reject(task.getSecretAccessKey(), secretAccessKeyOption);
+                reject(task.getSessionToken(), sessionTokenOption);
 
                 String profileName = task.getProfileName().or("default");
                 ProfileCredentialsProvider provider;
@@ -99,19 +117,19 @@ public abstract class AwsCredentials
             }
 
         case "properties":
-            reject(task.getAccessKeyId(), "access_key_id");
-            reject(task.getSecretAccessKey(), "secret_access_key");
-            reject(task.getSessionToken(), "session_token");
-            reject(task.getProfileFile(), "profile_file");
-            reject(task.getProfileName(), "profile_name");
+            reject(task.getAccessKeyId(), accessKeyIdOption);
+            reject(task.getSecretAccessKey(), secretAccessKeyOption);
+            reject(task.getSessionToken(), sessionTokenOption);
+            reject(task.getProfileFile(), profileFileOption);
+            reject(task.getProfileName(), profileNameOption);
             return overwriteBasicCredentials(task, new SystemPropertiesCredentialsProvider().getCredentials());
 
         case "anonymous":
-            reject(task.getAccessKeyId(), "access_key_id");
-            reject(task.getSecretAccessKey(), "secret_access_key");
-            reject(task.getSessionToken(), "session_token");
-            reject(task.getProfileFile(), "profile_file");
-            reject(task.getProfileName(), "profile_name");
+            reject(task.getAccessKeyId(), accessKeyIdOption);
+            reject(task.getSecretAccessKey(), secretAccessKeyOption);
+            reject(task.getSessionToken(), sessionTokenOption);
+            reject(task.getProfileFile(), profileFileOption);
+            reject(task.getProfileName(), profileNameOption);
             return new AWSCredentialsProvider() {
                 public AWSCredentials getCredentials()
                 {
@@ -123,11 +141,14 @@ public abstract class AwsCredentials
 
         case "session":
             {
-                String accessKeyId = require(task.getAccessKeyId(), "'access_key_id', 'secret_access_key', 'session_token'");
-                String secretAccessKey = require(task.getSecretAccessKey(), "'secret_access_key', 'session_token'");
-                String sessionToken = require(task.getSessionToken(), "'session_token'");
-                reject(task.getProfileFile(), "profile_file");
-                reject(task.getProfileName(), "profile_name");
+                String accessKeyId = require(task.getAccessKeyId(),
+                        "'" + accessKeyIdOption +"', '" + secretAccessKeyOption + "', '" + sessionTokenOption + "'");
+                String secretAccessKey = require(task.getSecretAccessKey(),
+                        "'" + secretAccessKeyOption + "', '" + sessionTokenOption + "'");
+                String sessionToken = require(task.getSessionToken(),
+                        "'" + sessionTokenOption + "'");
+                reject(task.getProfileFile(), profileFileOption);
+                reject(task.getProfileName(), profileNameOption);
                 final AWSSessionCredentials creds = new BasicSessionCredentials(accessKeyId, secretAccessKey, sessionToken);
                 return new AWSSessionCredentialsProvider() {
                     public AWSSessionCredentials getCredentials()
@@ -145,7 +166,7 @@ public abstract class AwsCredentials
         }
     }
 
-    private static AWSCredentialsProvider overwriteBasicCredentials(AwsCredentialsTask task, final AWSCredentials creds)
+    private static AWSCredentialsProvider overwriteBasicCredentials(AwsCredentialsConfig task, final AWSCredentials creds)
     {
         task.setAuthMethod("basic");
         task.setAccessKeyId(Optional.of(creds.getAWSAccessKeyId()));

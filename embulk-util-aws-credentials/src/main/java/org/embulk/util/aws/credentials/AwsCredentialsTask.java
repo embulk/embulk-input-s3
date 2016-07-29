@@ -1,4 +1,4 @@
-package org.embulk.input.s3;
+package org.embulk.util.aws.credentials;
 
 import com.google.common.base.Optional;
 import org.embulk.config.Config;
@@ -6,34 +6,35 @@ import org.embulk.config.ConfigDefault;
 import org.embulk.spi.unit.LocalFile;
 
 public interface AwsCredentialsTask
+    extends AwsCredentialsConfig
 {
+    @Override
     @Config("auth_method")
     @ConfigDefault("\"basic\"")
     String getAuthMethod();
-    void setAuthMethod(String method);
 
+    @Override
     @Config("access_key_id")
     @ConfigDefault("null")
     Optional<String> getAccessKeyId();
-    void setAccessKeyId(Optional<String> value);
 
+    @Override
     @Config("secret_access_key")
     @ConfigDefault("null")
     Optional<String> getSecretAccessKey();
-    void setSecretAccessKey(Optional<String> value);
 
+    @Override
     @Config("session_token")
     @ConfigDefault("null")
     Optional<String> getSessionToken();
-    void setSessionToken(Optional<String> value);
 
+    @Override
     @Config("profile_file")
     @ConfigDefault("null")
     Optional<LocalFile> getProfileFile();
-    void setProfileFile(Optional<LocalFile> value);
 
+    @Override
     @Config("profile_name")
     @ConfigDefault("null")
     Optional<String> getProfileName();
-    void setProfileName(Optional<String> value);
 }

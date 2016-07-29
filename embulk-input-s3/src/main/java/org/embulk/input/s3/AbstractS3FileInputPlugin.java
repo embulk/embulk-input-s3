@@ -41,6 +41,8 @@ import org.embulk.spi.util.InputStreamFileInput;
 import org.embulk.spi.util.ResumableInputStream;
 import org.embulk.spi.util.RetryExecutor.Retryable;
 import org.embulk.spi.util.RetryExecutor.RetryGiveupException;
+import org.embulk.util.aws.credentials.AwsCredentials;
+import org.embulk.util.aws.credentials.AwsCredentialsTask;
 import static org.embulk.spi.util.RetryExecutor.retryExecutor;
 
 public abstract class AbstractS3FileInputPlugin
