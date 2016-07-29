@@ -1,3 +1,4 @@
 rootProject.name = 'embulk-input-s3'
+include 'embulk-util-aws-credentials'
 include 'embulk-input-s3'
 include 'embulk-input-riak_cs'
