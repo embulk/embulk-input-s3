@@ -15,8 +15,8 @@ allprojects {
     // bintray
     bintray {
         // write at your bintray user name and api key to ~/.gradle/gradle.properties file:
-        user = project.hasProperty('bintray_user')
-        key = project.hasProperty('bintray_api_key')
+        user = project.hasProperty('bintray_user') ? bintray_user : ''
+        key = project.hasProperty('bintray_api_key') ? bintray_api_key : ''
 
         publications = ['mavenJava']
         publish = true
@@ -86,17 +86,15 @@ subprojects {
     clean { delete 'classpath' }
 
     if (![project(":embulk-util-aws-credentials")].contains(project)) {
-    task gem(type: JRubyExec, dependsOn: ['build', 'gemspec', 'classpath']) {
-        jrubyArgs '-rrubygems/gem_runner', "-eGem::GemRunner.new.run(ARGV)", 'build'
-        script "${project.projectDir.absolutePath}/build/gemspec"
-        doLast { ant.move(file: "${project.name}-${project.version}.gem", todir: "${parent.projectDir}/pkg") }
-    }
-    }
-
-    // publishing
-    publishing {
-        publications {
-            if ([project(":embulk-util-aws-credentials")].contains(project)) {
+        task gem(type: JRubyExec, dependsOn: ['build', 'gemspec', 'classpath']) {
+            jrubyArgs '-rrubygems/gem_runner', "-eGem::GemRunner.new.run(ARGV)", 'build'
+            script "${project.projectDir.absolutePath}/build/gemspec"
+            doLast { ant.move(file: "${project.name}-${project.version}.gem", todir: "${parent.projectDir}/pkg") }
+	}
+    } else {
+        // publishing
+        publishing {
+            publications {
                  mavenJava(MavenPublication) {
                      from components.java
                      artifact testsJar
