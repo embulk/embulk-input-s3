@@ -163,6 +163,11 @@ public abstract class AwsCredentials
 
         case "default":
             {
+                reject(task.getAccessKeyId(), accessKeyIdOption);
+                reject(task.getSecretAccessKey(), secretAccessKeyOption);
+                reject(task.getSessionToken(), sessionTokenOption);
+                reject(task.getProfileFile(), profileFileOption);
+                reject(task.getProfileName(), profileNameOption);
                 return new DefaultAWSCredentialsProviderChain();
             }
 
