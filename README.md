@@ -53,6 +53,14 @@
 
     - **session_token**: session token (string, required)
 
+  - "default": uses AWS SDK's default strategy to look up available credentials from runtime environment. This method behaves like the combination of the following methods.
+
+    1. "env"
+    1. "properties"
+    1. "profile"
+    1. "instance"
+
+
 * **path_match_pattern**: regexp to match file paths. If a file path doesn't match with this pattern, the file will be skipped (regexp string, optional)
 
 * **total_file_count_limit**: maximum number of files to read (integer, optional)

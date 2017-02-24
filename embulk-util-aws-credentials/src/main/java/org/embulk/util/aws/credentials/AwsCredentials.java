@@ -8,6 +8,7 @@ import com.amazonaws.auth.AWSSessionCredentialsProvider;
 import com.amazonaws.auth.AnonymousAWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.BasicSessionCredentials;
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.auth.EnvironmentVariableCredentialsProvider;
 import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.amazonaws.auth.SystemPropertiesCredentialsProvider;
@@ -160,8 +161,18 @@ public abstract class AwsCredentials
                 };
             }
 
+        case "default":
+            {
+                reject(task.getAccessKeyId(), accessKeyIdOption);
+                reject(task.getSecretAccessKey(), secretAccessKeyOption);
+                reject(task.getSessionToken(), sessionTokenOption);
+                reject(task.getProfileFile(), profileFileOption);
+                reject(task.getProfileName(), profileNameOption);
+                return new DefaultAWSCredentialsProviderChain();
+            }
+
         default:
-            throw new ConfigException(String.format("Unknown auth_method '%s'. Supported methods are basic, instance, profile, properties, anonymous, and session.",
+            throw new ConfigException(String.format("Unknown auth_method '%s'. Supported methods are basic, instance, profile, properties, anonymous, session and default.",
                         task.getAuthMethod()));
         }
     }
