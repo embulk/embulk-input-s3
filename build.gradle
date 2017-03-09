@@ -1,5 +1,5 @@
 plugins {
-    id "com.jfrog.bintray" version "1.6"
+    id "com.jfrog.bintray" version "1.7"
     id "com.github.jruby-gradle.base" version "0.1.5"
     id "java"
 }
