@@ -1,5 +1,5 @@
 plugins {
-    id "com.jfrog.bintray" version "1.1"
+    id "com.jfrog.bintray" version "1.6"
     id "com.github.jruby-gradle.base" version "0.1.5"
     id "java"
 }
@@ -8,6 +8,36 @@ import com.github.jrubygradle.JRubyExec
 allprojects {
     group = 'org.embulk.input.s3'
     version = '0.2.8'
+
+    apply plugin: 'com.jfrog.bintray'
+    apply plugin: 'maven-publish'
+
+    // bintray
+    bintray {
+        // write at your bintray user name and api key to ~/.gradle/gradle.properties file:
+        user = project.hasProperty('bintray_user') ? bintray_user : ''
+        key = project.hasProperty('bintray_api_key') ? bintray_api_key : ''
+
+        publications = ['mavenJava']
+        publish = true
+
+        pkg {
+            userOrg = 'embulk-input-s3'
+            repo = 'maven'
+            name = project.name
+            desc = 'S3 file input plugin for Embulk'
+            websiteUrl = 'https://github.com/embulk/embulk-input-s3'
+            issueTrackerUrl = 'https://github.com/embulk/embulk-input-s3/issues'
+            vcsUrl = 'https://github.com/embulk/embulk-input-s3.git'
+            licenses = ['Apache-2.0']
+            labels = ['embulk', 'java']
+            publicDownloadNumbers = true
+
+            version {
+                name = project.version
+            }
+        }
+    }
 }
 
 subprojects {
@@ -55,10 +85,49 @@ subprojects {
     }
     clean { delete 'classpath' }
 
-    task gem(type: JRubyExec, dependsOn: ['build', 'gemspec', 'classpath']) {
-        jrubyArgs '-rrubygems/gem_runner', "-eGem::GemRunner.new.run(ARGV)", 'build'
-        script "${project.projectDir.absolutePath}/build/gemspec"
-        doLast { ant.move(file: "${project.name}-${project.version}.gem", todir: "${parent.projectDir}/pkg") }
+    if (![project(":embulk-util-aws-credentials")].contains(project)) {
+        task gem(type: JRubyExec, dependsOn: ['build', 'gemspec', 'classpath']) {
+            jrubyArgs '-rrubygems/gem_runner', "-eGem::GemRunner.new.run(ARGV)", 'build'
+            script "${project.projectDir.absolutePath}/build/gemspec"
+            doLast { ant.move(file: "${project.name}-${project.version}.gem", todir: "${parent.projectDir}/pkg") }
+	}
+    } else {
+        // publishing
+        publishing {
+            publications {
+                 mavenJava(MavenPublication) {
+                     from components.java
+                     artifact testsJar
+                     artifact sourcesJar
+                     artifact javadocJar
+                     pom.withXml {
+                         asNode().dependencies.dependency.findAll() {
+                             it.scope.text() == 'runtime' && project.configurations.compile.allDependencies.find { dep ->
+                                 dep.name == it.artifactId.text()
+                             }
+                         }.each() {
+                             it.scope*.value = 'compile'
+                         }
+                     }
+                 }
+            }
+	}
+    }
+    // add tests/javadoc/source jar tasks as artifacts to be released
+    task testsJar(type: Jar, dependsOn: classes) {
+        classifier = 'tests'
+        from sourceSets.test.output
+    }
+    task sourcesJar(type: Jar, dependsOn: classes) {
+        classifier = 'sources'
+        from sourceSets.main.allSource
+    }
+    task javadocJar(type: Jar, dependsOn: javadoc) {
+        classifier = 'javadoc'
+        from javadoc.destinationDir
+    }
+    artifacts {
+        archives testsJar, sourcesJar, javadocJar
     }
 }
 
@@ -66,3 +135,4 @@ task gemPush << {
     "gem push pkg/embulk-input-s3-${project.version}.gem".execute().waitFor()
     "gem push pkg/embulk-input-riak_cs-${project.version}.gem".execute().waitFor()
 }
+
