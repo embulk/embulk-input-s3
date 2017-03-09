@@ -1,3 +1,6 @@
+Release 0.2.9 - 2017-03-09
+
+* Added "default" auth_method: option by DefaultAWSCredentialsProviderChain
 
 Release 0.2.8 - 2016-04-25
 
