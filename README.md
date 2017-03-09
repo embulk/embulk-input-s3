@@ -124,6 +124,14 @@ in:
 ./gradlew gem
 ```
 
+## Release
+
+```
+./gradlew clean gem classpath
+./gradlew gemPush # release plugin gems to RubyGems.org
+./gradlew bintrayUpload # release embulk-util-aws-credentials to Bintray maven repo
+```
+
 ## Test
 
 To run unit tests, we need to configure the following environment variables.
