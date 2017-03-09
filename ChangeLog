@@ -1,3 +1,7 @@
+Release 0.2.10 - 2017-03-09
+
+* Changed HTTP responses handling: throw ConfigException if error code is ExpiredToken. (@tvhung83) [#43]
+
 Release 0.2.9 - 2017-03-09
 
 * Added "default" auth_method: option by DefaultAWSCredentialsProviderChain
