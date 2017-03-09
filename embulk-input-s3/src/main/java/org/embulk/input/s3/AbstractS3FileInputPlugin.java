@@ -166,7 +166,8 @@ public abstract class AbstractS3FileInputPlugin
             if (ex.getErrorType().equals(AmazonServiceException.ErrorType.Client)) {
                 // HTTP 40x errors. auth error, bucket doesn't exist, etc. See AWS document for the full list:
                 // http://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html
-                if (ex.getStatusCode() != 400) {  // 404 Bad Request is unexpected error
+                if (ex.getStatusCode() != 400   // 404 Bad Request is unexpected error
+                        || "ExpiredToken".equalsIgnoreCase(ex.getErrorCode())) { // if statusCode == 400 && errorCode == ExpiredToken => throws ConfigException
                     throw new ConfigException(ex);
                 }
             }
