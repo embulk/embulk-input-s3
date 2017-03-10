@@ -1,5 +1,5 @@
 plugins {
-    id "com.jfrog.bintray" version "1.6"
+    id "com.jfrog.bintray" version "1.7"
     id "com.github.jruby-gradle.base" version "0.1.5"
     id "java"
 }
@@ -61,15 +61,15 @@ subprojects {
     targetCompatibility = 1.7
 
     dependencies {
-        compile  "org.embulk:embulk-core:0.8.9"
-        provided "org.embulk:embulk-core:0.8.9"
+        compile  "org.embulk:embulk-core:0.8.18"
+        provided "org.embulk:embulk-core:0.8.18"
         compile "com.amazonaws:aws-java-sdk-s3:1.10.33"
         runtime "org.slf4j:jcl-over-slf4j:1.7.12"  // aws-sdk uses Apache Commons Logging and Embulk uses slf4j
         testCompile "com.amazonaws:aws-java-sdk-sts:1.10.33"
         testCompile "junit:junit:4.+"
         testCompile "org.mockito:mockito-core:1.+"
-        testCompile "org.embulk:embulk-standards:0.8.9"
-        testCompile "org.embulk:embulk-core:0.8.9:tests"
+        testCompile "org.embulk:embulk-standards:0.8.18"
+        testCompile "org.embulk:embulk-core:0.8.18:tests"
     }
 
     gradle.projectsEvaluated {
