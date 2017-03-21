@@ -71,6 +71,19 @@ public abstract class AbstractS3FileInputPlugin
         @ConfigDefault("true")
         public boolean getIncremental();
 
+        //With Liquid Template
+        //https_proxy: {{env:https_proxy}}
+
+        //Nomarl Template
+        //https_proxy: proxy.xxxx.co.jp:8080
+        //OR
+        //https_proxy=http://proxy.xxxxx.co.jp:8080
+
+        @Config("https_proxy")
+        @ConfigDefault("null")
+        public Optional<String> getHttpsProxy();
+        
+        
         // TODO timeout, ssl, etc
 
         public FileList getFiles();
@@ -143,6 +156,21 @@ public abstract class AbstractS3FileInputPlugin
         clientConfig.setMaxConnections(50); // SDK default: 50
         clientConfig.setMaxErrorRetry(3); // SDK default: 3
         clientConfig.setSocketTimeout(8*60*1000); // SDK default: 50*1000
+        
+    	
+    	
+    	if ( task.getHttpsProxy().isPresent()) {
+
+                    String[] proxyArgs = task.getHttpsProxy().get().replaceAll("http://", "")
+                            .replaceAll("https://", "").split(":");
+                            clientConfig.setProxyHost(proxyArgs[0]);
+                    if(proxyArgs.length == 2){
+                            clientConfig.setProxyPort(Integer.parseInt(proxyArgs[1]));				
+                    }else{
+                            clientConfig.setProxyPort(80);
+                    }
+    	}
+    	
 
         return clientConfig;
     }
