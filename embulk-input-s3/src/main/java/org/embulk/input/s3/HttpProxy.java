@@ -2,6 +2,7 @@ package org.embulk.input.s3;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 
 import java.io.UnsupportedEncodingException;
@@ -103,7 +104,8 @@ public class HttpProxy
         }
     }
 
-    private static HttpProxy parseHttpProxy(String httpProxyString)
+    @VisibleForTesting
+    static HttpProxy parseHttpProxy(String httpProxyString)
             throws URISyntaxException, UnsupportedEncodingException
     {
         URI uri = new URI(httpProxyString);
