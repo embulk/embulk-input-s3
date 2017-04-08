@@ -109,7 +109,7 @@ public class HttpProxy
         URI uri = new URI(httpProxyString);
 
         String host = uri.getHost();
-        Optional<Integer> port = uri.getPort() != -1 ? Optional.of(uri.getPort()) : Optional.absent();
+        Optional<Integer> port = uri.getPort() != -1 ? Optional.of(uri.getPort()) : Optional.<Integer>absent();
         boolean useSsl = "https".equals(uri.getScheme());
 
         Optional<String> user = Optional.absent();
