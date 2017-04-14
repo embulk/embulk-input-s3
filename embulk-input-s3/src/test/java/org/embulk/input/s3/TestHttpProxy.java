@@ -96,37 +96,37 @@ public class TestHttpProxy
         {
             httpProxyString = "https://my.local.com:8080";
             assertHttpProxy(new HttpProxy("my.local.com", Optional.of(8080), true, Optional.<String>absent(), Optional.<String>absent()),
-                    HttpProxy.parseHttpProxy(httpProxyString));
+                    HttpProxy.parseHttpProxyFromUrl(httpProxyString));
         }
 
         {
             httpProxyString = "https://my.local.com";
             assertHttpProxy(new HttpProxy("my.local.com", Optional.<Integer>absent(), true, Optional.<String>absent(), Optional.<String>absent()),
-                    HttpProxy.parseHttpProxy(httpProxyString));
+                    HttpProxy.parseHttpProxyFromUrl(httpProxyString));
         }
 
         {
             httpProxyString = "http://my.local.com:8080";
             assertHttpProxy(new HttpProxy("my.local.com", Optional.of(8080), false, Optional.<String>absent(), Optional.<String>absent()),
-                    HttpProxy.parseHttpProxy(httpProxyString));
+                    HttpProxy.parseHttpProxyFromUrl(httpProxyString));
         }
 
         {
             httpProxyString = "https://my_user@my.local.com:8080";
             assertHttpProxy(new HttpProxy("my.local.com", Optional.of(8080), true, Optional.of("my_user"), Optional.<String>absent()),
-                    HttpProxy.parseHttpProxy(httpProxyString));
+                    HttpProxy.parseHttpProxyFromUrl(httpProxyString));
         }
 
         {
             httpProxyString = "https://my_user:my_pass@my.local.com:8080";
             assertHttpProxy(new HttpProxy("my.local.com", Optional.of(8080), true, Optional.of("my_user"), Optional.of("my_pass")),
-                    HttpProxy.parseHttpProxy(httpProxyString));
+                    HttpProxy.parseHttpProxyFromUrl(httpProxyString));
         }
 
         { // invalid uri
             httpProxyString = ":";
             try {
-                HttpProxy.parseHttpProxy(httpProxyString);
+                HttpProxy.parseHttpProxyFromUrl(httpProxyString);
                 fail();
             }
             catch (Throwable t) {

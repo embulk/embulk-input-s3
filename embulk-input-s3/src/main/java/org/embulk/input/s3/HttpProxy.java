@@ -70,16 +70,16 @@ public class HttpProxy
      * "HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy" and extracts http proxy settings
      * in the order.
      */
-    public static Optional<HttpProxy> getHttpProxyFromEnv()
+    public static Optional<HttpProxy> createHttpProxyFromEnv()
     {
-        return getHttpProxyFromEnv("HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy");
+        return createHttpProxyFromEnv("HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy");
     }
 
     /**
      * Returns http proxy settings from environment variables of given names. It searches specified
      * environment variables and extracts http proxy setting in the order.
      */
-    public static Optional<HttpProxy> getHttpProxyFromEnv(String... envNames)
+    public static Optional<HttpProxy> createHttpProxyFromEnv(String... envNames)
     {
         Map<String, String> env = System.getenv();
 
@@ -96,7 +96,7 @@ public class HttpProxy
         }
         else {
             try {
-                return Optional.of(parseHttpProxy(envVar));
+                return Optional.of(parseHttpProxyFromUrl(envVar));
             }
             catch (URISyntaxException | UnsupportedEncodingException e) {
                 return Optional.absent();
@@ -105,7 +105,7 @@ public class HttpProxy
     }
 
     @VisibleForTesting
-    static HttpProxy parseHttpProxy(String httpProxyString)
+    static HttpProxy parseHttpProxyFromUrl(String httpProxyString)
             throws URISyntaxException, UnsupportedEncodingException
     {
         URI uri = new URI(httpProxyString);

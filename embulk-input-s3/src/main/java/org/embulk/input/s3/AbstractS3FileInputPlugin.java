@@ -93,7 +93,7 @@ public abstract class AbstractS3FileInputPlugin
         PluginTask task = config.loadConfig(getTaskClass());
 
         // configure http proxy
-        task.setHttpProxy(setupHttpProxy(task));
+        task.setHttpProxy(createHttpProxyWithDefault(task));
 
         // list files recursively
         task.setFiles(listFiles(task));
@@ -154,21 +154,21 @@ public abstract class AbstractS3FileInputPlugin
 
         // set http proxy
         if (task.getHttpProxy().isPresent()) {
-            setHttpProxy(clientConfig, task.getHttpProxy().get());
+            setHttpProxyInAwsClient(clientConfig, task.getHttpProxy().get());
         }
 
         return clientConfig;
     }
 
-    private Optional<HttpProxy> setupHttpProxy(PluginTask task)
+    private Optional<HttpProxy> createHttpProxyWithDefault(PluginTask task)
     {
         // If users configure http proxy in in: section, the settings are used. If http proxy settings
         // don't exist in the config, it searches and extracts from environment variables: "HTTPS_PROXY",
         // "https_proxy", "HTTP_PROXY", "http_proxy".
-        return task.getHttpProxy().or(HttpProxy.getHttpProxyFromEnv());
+        return task.getHttpProxy().or(HttpProxy.createHttpProxyFromEnv());
     }
 
-    private void setHttpProxy(ClientConfiguration clientConfig, HttpProxy httpProxy)
+    private void setHttpProxyInAwsClient(ClientConfiguration clientConfig, HttpProxy httpProxy)
     {
         // host
         clientConfig.setProxyHost(httpProxy.getHost());
