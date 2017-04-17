@@ -59,7 +59,7 @@ public class TestHttpProxy
             Map<String, Object> httpProxyMap = ImmutableMap.<String, Object>of(
                     "host", host,
                     "port", 8080,
-                    "use_ssl", true);
+                    "https", true);
             ConfigSource conf = config.deepCopy().set("http_proxy", httpProxyMap);
             S3PluginTask task = conf.loadConfig(S3PluginTask.class);
 
@@ -76,7 +76,7 @@ public class TestHttpProxy
             Map<String, Object> httpProxyMap = ImmutableMap.<String, Object>of(
                     "host", host,
                     "port", 8080,
-                    "use_ssl", true,
+                    "https", true,
                     "user", user,
                     "password", password);
             ConfigSource conf = config.deepCopy().set("http_proxy", httpProxyMap);
@@ -84,54 +84,6 @@ public class TestHttpProxy
 
             assertHttpProxy(new HttpProxy(host, Optional.of(port), true, Optional.of(user), Optional.of(password)),
                     task.getHttpProxy().get());
-        }
-    }
-
-    @Test
-    public void parseHttpProxy()
-            throws Exception
-    {
-        String httpProxyString;
-
-        {
-            httpProxyString = "https://my.local.com:8080";
-            assertHttpProxy(new HttpProxy("my.local.com", Optional.of(8080), true, Optional.<String>absent(), Optional.<String>absent()),
-                    HttpProxy.parseHttpProxyFromUrl(httpProxyString));
-        }
-
-        {
-            httpProxyString = "https://my.local.com";
-            assertHttpProxy(new HttpProxy("my.local.com", Optional.<Integer>absent(), true, Optional.<String>absent(), Optional.<String>absent()),
-                    HttpProxy.parseHttpProxyFromUrl(httpProxyString));
-        }
-
-        {
-            httpProxyString = "http://my.local.com:8080";
-            assertHttpProxy(new HttpProxy("my.local.com", Optional.of(8080), false, Optional.<String>absent(), Optional.<String>absent()),
-                    HttpProxy.parseHttpProxyFromUrl(httpProxyString));
-        }
-
-        {
-            httpProxyString = "https://my_user@my.local.com:8080";
-            assertHttpProxy(new HttpProxy("my.local.com", Optional.of(8080), true, Optional.of("my_user"), Optional.<String>absent()),
-                    HttpProxy.parseHttpProxyFromUrl(httpProxyString));
-        }
-
-        {
-            httpProxyString = "https://my_user:my_pass@my.local.com:8080";
-            assertHttpProxy(new HttpProxy("my.local.com", Optional.of(8080), true, Optional.of("my_user"), Optional.of("my_pass")),
-                    HttpProxy.parseHttpProxyFromUrl(httpProxyString));
-        }
-
-        { // invalid uri
-            httpProxyString = ":";
-            try {
-                HttpProxy.parseHttpProxyFromUrl(httpProxyString);
-                fail();
-            }
-            catch (Throwable t) {
-                assertTrue(t instanceof URISyntaxException);
-            }
         }
     }
 
