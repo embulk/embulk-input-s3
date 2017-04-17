@@ -147,7 +147,7 @@ public class TestHttpProxy
         if (expected.getPort().isPresent()) {
             assertEquals(expected.getPort().get(), actual.getPort().get());
         }
-        assertEquals(expected.useSsl(), actual.useSsl());
+        assertEquals(expected.useHttps(), actual.useHttps());
         assertEquals(expected.getUser().isPresent(), actual.getUser().isPresent());
         if (expected.getUser().isPresent()) {
             assertEquals(expected.getUser().get(), actual.getUser().get());
