@@ -14,7 +14,7 @@ public class HttpProxy
 {
     private final String host;
     private final Optional<Integer> port;
-    private final boolean https;
+    private final Optional<Boolean> https;
     private final Optional<String> user;
     private final Optional<String> password; // TODO use SecretString
 
@@ -22,7 +22,7 @@ public class HttpProxy
     public HttpProxy(
             @JsonProperty("host") String host,
             @JsonProperty("port") Optional<Integer> port,
-            @JsonProperty("https") boolean https,
+            @JsonProperty("https") Optional<Boolean> https,
             @JsonProperty("user") Optional<String> user,
             @JsonProperty("password") Optional<String> password)
     {
@@ -43,7 +43,7 @@ public class HttpProxy
         return port;
     }
 
-    public boolean useHttps()
+    public Optional<Boolean> useHttps()
     {
         return https;
     }

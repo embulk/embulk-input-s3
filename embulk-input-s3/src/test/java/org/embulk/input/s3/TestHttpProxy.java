@@ -48,7 +48,7 @@ public class TestHttpProxy
             ConfigSource conf = config.deepCopy().set("http_proxy", httpProxyMap);
             S3PluginTask task = conf.loadConfig(S3PluginTask.class);
 
-            assertHttpProxy(new HttpProxy(host, Optional.<Integer>absent(), false, Optional.<String>absent(), Optional.<String>absent()),
+            assertHttpProxy(new HttpProxy(host, Optional.<Integer>absent(), Optional.<Boolean>absent(), Optional.<String>absent(), Optional.<String>absent()),
                     task.getHttpProxy().get());
         }
 
@@ -63,7 +63,7 @@ public class TestHttpProxy
             ConfigSource conf = config.deepCopy().set("http_proxy", httpProxyMap);
             S3PluginTask task = conf.loadConfig(S3PluginTask.class);
 
-            assertHttpProxy(new HttpProxy(host, Optional.of(port), true, Optional.<String>absent(), Optional.<String>absent()),
+            assertHttpProxy(new HttpProxy(host, Optional.of(port), Optional.of(true), Optional.<String>absent(), Optional.<String>absent()),
                     task.getHttpProxy().get());
         }
 
@@ -82,7 +82,7 @@ public class TestHttpProxy
             ConfigSource conf = config.deepCopy().set("http_proxy", httpProxyMap);
             S3PluginTask task = conf.loadConfig(S3PluginTask.class);
 
-            assertHttpProxy(new HttpProxy(host, Optional.of(port), true, Optional.of(user), Optional.of(password)),
+            assertHttpProxy(new HttpProxy(host, Optional.of(port), Optional.of(true), Optional.of(user), Optional.of(password)),
                     task.getHttpProxy().get());
         }
     }
@@ -99,7 +99,10 @@ public class TestHttpProxy
         if (expected.getPort().isPresent()) {
             assertEquals(expected.getPort().get(), actual.getPort().get());
         }
-        assertEquals(expected.useHttps(), actual.useHttps());
+        if (expected.useHttps().isPresent()) {
+            assertEquals(expected.useHttps().get(), actual.useHttps().get());
+        }
+
         assertEquals(expected.getUser().isPresent(), actual.getUser().isPresent());
         if (expected.getUser().isPresent()) {
             assertEquals(expected.getUser().get(), actual.getUser().get());
