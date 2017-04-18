@@ -67,6 +67,11 @@ public abstract class AbstractS3FileInputPlugin
         @ConfigDefault("null")
         public Optional<String> getAccessKeyId();
 
+        @Config("http_proxy")
+        @ConfigDefault("null")
+        public Optional<HttpProxy> getHttpProxy();
+        public void setHttpProxy(Optional<HttpProxy> httpProxy);
+
         @Config("incremental")
         @ConfigDefault("true")
         public boolean getIncremental();
@@ -144,7 +149,36 @@ public abstract class AbstractS3FileInputPlugin
         clientConfig.setMaxErrorRetry(3); // SDK default: 3
         clientConfig.setSocketTimeout(8*60*1000); // SDK default: 50*1000
 
+        // set http proxy
+        if (task.getHttpProxy().isPresent()) {
+            setHttpProxyInAwsClient(clientConfig, task.getHttpProxy().get());
+        }
+
         return clientConfig;
+    }
+
+    private void setHttpProxyInAwsClient(ClientConfiguration clientConfig, HttpProxy httpProxy)
+    {
+        // host
+        clientConfig.setProxyHost(httpProxy.getHost());
+
+        // port
+        if (httpProxy.getPort().isPresent()) {
+            clientConfig.setProxyPort(httpProxy.getPort().get());
+        }
+
+        // useHttps
+        clientConfig.setProtocol(httpProxy.useHttps() ? Protocol.HTTPS : Protocol.HTTP);
+
+        // user
+        if (httpProxy.getUser().isPresent()) {
+            clientConfig.setProxyUsername(httpProxy.getUser().get());
+        }
+
+        // password
+        if (httpProxy.getPassword().isPresent()) {
+            clientConfig.setProxyPassword(httpProxy.getPassword().get());
+        }
     }
 
     private FileList listFiles(PluginTask task)
