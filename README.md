@@ -14,6 +14,13 @@
 
 - **endpoint** S3 endpoint login user name (string, optional)
 
+- **http_proxy** http proxy configuration to use when accessing AWS S3 via http proxy. (optional)
+  - **host** proxy host (string, required)
+  - **port** proxy port (int, optional)
+  - **https** use https or not (boolean, default true)
+  - **user** proxy user (string, optional)
+  - **password** proxy password (string, optional)
+
 - **auth_method**: name of mechanism to authenticate requests (basic, env, instance, profile, properties, anonymous, or session. default: basic)
 
   - "basic": uses access_key_id and secret_access_key to authenticate.
@@ -79,6 +86,21 @@ in:
   endpoint: s3-us-west-1.amazonaws.com
   access_key_id: ABCXYZ123ABCXYZ123
   secret_access_key: AbCxYz123aBcXyZ123
+```
+
+To set http proxy configuration:
+
+```yaml
+in:
+  type: s3
+  bucket: my-s3-bucket
+  path_prefix: logs/csv-
+  endpoint: s3-us-west-1.amazonaws.com
+  access_key_id: ABCXYZ123ABCXYZ123
+  secret_access_key: AbCxYz123aBcXyZ123
+  http_proxy:
+    host: localhost
+    port: 8080
 ```
 
 To skip files using regexp:
