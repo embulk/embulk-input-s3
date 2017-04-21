@@ -1,8 +1,9 @@
 package org.embulk.input.s3;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Optional;
+import org.embulk.config.Config;
+import org.embulk.config.ConfigDefault;
+import org.embulk.config.Task;
 
 /**
  * HttpProxy is config unit for Input/Output plugins' configs.
@@ -10,11 +11,32 @@ import com.google.common.base.Optional;
  * TODO
  * This unit will be moved to embulk/embulk-plugin-units.git.
  */
-public class HttpProxy
+public interface HttpProxy
+    extends Task
 {
+    @Config("host")
+    public String getHost();
+
+    @Config("port")
+    @ConfigDefault("null")
+    public Optional<Integer> getPort();
+
+    @Config("https")
+    @ConfigDefault("true")
+    public boolean getHttps();
+
+    @Config("user")
+    @ConfigDefault("null")
+    public Optional<String> getUser();
+
+    @Config("password")
+    @ConfigDefault("null")
+    public Optional<String> getPassword();
+
+    /* TODO We can use this by jackson-core v2.6
     private final String host;
     private final Optional<Integer> port;
-    private final Optional<Boolean> https;
+    private final boolean https;
     private final Optional<String> user;
     private final Optional<String> password; // TODO use SecretString
 
@@ -22,7 +44,7 @@ public class HttpProxy
     public HttpProxy(
             @JsonProperty("host") String host,
             @JsonProperty("port") Optional<Integer> port,
-            @JsonProperty("https") Optional<Boolean> https,
+            @JsonProperty(defaultValue = "true", value = "https", required = false) boolean https,
             @JsonProperty("user") Optional<String> user,
             @JsonProperty("password") Optional<String> password)
     {
@@ -32,29 +54,5 @@ public class HttpProxy
         this.user = user;
         this.password = password;
     }
-
-    public String getHost()
-    {
-        return host;
-    }
-
-    public Optional<Integer> getPort()
-    {
-        return port;
-    }
-
-    public Optional<Boolean> useHttps()
-    {
-        return https;
-    }
-
-    public Optional<String> getUser()
-    {
-        return user;
-    }
-
-    public Optional<String> getPassword()
-    {
-        return password;
-    }
+    */
 }
