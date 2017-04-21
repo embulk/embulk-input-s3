@@ -171,12 +171,7 @@ public abstract class AbstractS3FileInputPlugin
         }
 
         // https
-        if (httpProxy.useHttps().isPresent()) {
-            clientConfig.setProtocol(httpProxy.useHttps().get() ? HTTPS : HTTP);
-        }
-        else { // use HTTPS by default
-            clientConfig.setProtocol(HTTPS);
-        }
+        clientConfig.setProtocol(httpProxy.getHttps() ? Protocol.HTTPS : Protocol.HTTP);
 
         // user
         if (httpProxy.getUser().isPresent()) {
