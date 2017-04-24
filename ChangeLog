@@ -1,8 +1,6 @@
 Release 0.2.11 - 2017-04-23
 
-* Set http_proxy.https option to true by default v2 [#54]
-* Add http_proxy option to README.md [#51]
-* Add HttpProxy option [#48]
+* Add http_proxy option [#48,#51,#54]
 * Upgrade gradle v3.2.1, Embulk v0.8.18, gradle bintray plugin v1.7 [#46]
 
 Release 0.2.10 - 2017-03-09
