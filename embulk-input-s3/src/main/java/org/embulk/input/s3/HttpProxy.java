@@ -33,7 +33,8 @@ public interface HttpProxy
     @ConfigDefault("null")
     public Optional<String> getPassword();
 
-    /* TODO We can use this by jackson-core v2.6
+    // TODO: Consider using @JsonProperty(defaultValue=...) in Jackson 2.6+.
+    /*
     private final String host;
     private final Optional<Integer> port;
     private final boolean https;
