@@ -8,8 +8,8 @@ import org.embulk.config.Task;
 /**
  * HttpProxy is config unit for Input/Output plugins' configs.
  *
- * TODO
- * This unit will be moved to embulk/embulk-plugin-units.git.
+ * TODO: This unit will be moved to embulk/embulk-plugin-units.git.
+ * TODO: Consider using @JsonProperty(defaultValue=...) in Jackson 2.6+.
  */
 public interface HttpProxy
     extends Task
@@ -32,28 +32,4 @@ public interface HttpProxy
     @Config("password")
     @ConfigDefault("null")
     public Optional<String> getPassword();
-
-    // TODO: Consider using @JsonProperty(defaultValue=...) in Jackson 2.6+.
-    /*
-    private final String host;
-    private final Optional<Integer> port;
-    private final boolean https;
-    private final Optional<String> user;
-    private final Optional<String> password; // TODO use SecretString
-
-    @JsonCreator
-    public HttpProxy(
-            @JsonProperty("host") String host,
-            @JsonProperty("port") Optional<Integer> port,
-            @JsonProperty(defaultValue = "true", value = "https", required = false) boolean https,
-            @JsonProperty("user") Optional<String> user,
-            @JsonProperty("password") Optional<String> password)
-    {
-        this.host = host;
-        this.port = port;
-        this.https = https;
-        this.user = user;
-        this.password = password;
-    }
-    */
 }
