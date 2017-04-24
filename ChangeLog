@@ -1,6 +1,6 @@
 Release 0.2.11 - 2017-04-23
 
-* Add http_proxy option [#48,#51,#54]
+* Support http_proxy option [#48,#51,#54]
 * Upgrade gradle v3.2.1, Embulk v0.8.18, gradle bintray plugin v1.7 [#46]
 
 Release 0.2.10 - 2017-03-09
