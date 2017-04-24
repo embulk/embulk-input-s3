@@ -1,9 +1,8 @@
 package org.embulk.input.s3;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Optional;
-import org.embulk.config.Config;
-import org.embulk.config.ConfigDefault;
-import org.embulk.config.Task;
 
 /**
  * HttpProxy is config unit for Input/Output plugins' configs.
@@ -11,30 +10,8 @@ import org.embulk.config.Task;
  * TODO
  * This unit will be moved to embulk/embulk-plugin-units.git.
  */
-public interface HttpProxy
-    extends Task
+public class HttpProxy
 {
-    @Config("host")
-    public String getHost();
-
-    @Config("port")
-    @ConfigDefault("null")
-    public Optional<Integer> getPort();
-
-    @Config("https")
-    @ConfigDefault("true")
-    public boolean getHttps();
-
-    @Config("user")
-    @ConfigDefault("null")
-    public Optional<String> getUser();
-
-    @Config("password")
-    @ConfigDefault("null")
-    public Optional<String> getPassword();
-
-    // TODO: Consider using @JsonProperty(defaultValue=...) in Jackson 2.6+.
-    /*
     private final String host;
     private final Optional<Integer> port;
     private final boolean https;
@@ -45,7 +22,7 @@ public interface HttpProxy
     public HttpProxy(
             @JsonProperty("host") String host,
             @JsonProperty("port") Optional<Integer> port,
-            @JsonProperty(defaultValue = "true", value = "https", required = false) boolean https,
+            @JsonProperty("https") boolean https,
             @JsonProperty("user") Optional<String> user,
             @JsonProperty("password") Optional<String> password)
     {
@@ -55,5 +32,29 @@ public interface HttpProxy
         this.user = user;
         this.password = password;
     }
-    */
+
+    public String getHost()
+    {
+        return host;
+    }
+
+    public Optional<Integer> getPort()
+    {
+        return port;
+    }
+
+    public boolean useHttps()
+    {
+        return https;
+    }
+
+    public Optional<String> getUser()
+    {
+        return user;
+    }
+
+    public Optional<String> getPassword()
+    {
+        return password;
+    }
 }
