@@ -43,6 +43,9 @@ import org.embulk.spi.util.RetryExecutor.Retryable;
 import org.embulk.spi.util.RetryExecutor.RetryGiveupException;
 import org.embulk.util.aws.credentials.AwsCredentials;
 import org.embulk.util.aws.credentials.AwsCredentialsTask;
+
+import static com.amazonaws.Protocol.HTTP;
+import static com.amazonaws.Protocol.HTTPS;
 import static org.embulk.spi.util.RetryExecutor.retryExecutor;
 
 public abstract class AbstractS3FileInputPlugin
@@ -167,8 +170,8 @@ public abstract class AbstractS3FileInputPlugin
             clientConfig.setProxyPort(httpProxy.getPort().get());
         }
 
-        // useHttps
-        clientConfig.setProtocol(httpProxy.useHttps() ? Protocol.HTTPS : Protocol.HTTP);
+        // https
+        clientConfig.setProtocol(httpProxy.getHttps() ? Protocol.HTTPS : Protocol.HTTP);
 
         // user
         if (httpProxy.getUser().isPresent()) {

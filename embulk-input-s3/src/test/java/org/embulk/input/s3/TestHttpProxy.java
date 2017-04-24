@@ -1,7 +1,6 @@
 package org.embulk.input.s3;
 
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableMap;
 import org.embulk.EmbulkTestRuntime;
 import org.embulk.config.ConfigSource;
 import org.embulk.input.s3.S3FileInputPlugin.S3PluginTask;
@@ -9,12 +8,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.net.URISyntaxException;
-import java.util.Map;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class TestHttpProxy
 {
@@ -44,46 +39,56 @@ public class TestHttpProxy
     {
         { // specify host
             String host = "my_host";
-            Map<String, Object> httpProxyMap = ImmutableMap.<String, Object>of("host", host);
-            ConfigSource conf = config.deepCopy().set("http_proxy", httpProxyMap);
-            S3PluginTask task = conf.loadConfig(S3PluginTask.class);
-
-            assertHttpProxy(new HttpProxy(host, Optional.<Integer>absent(), false, Optional.<String>absent(), Optional.<String>absent()),
-                    task.getHttpProxy().get());
+            ConfigSource conf = config.deepCopy().set("host", host);
+            HttpProxy httpProxy = conf.loadConfig(HttpProxy.class);
+            assertHttpProxy(host, Optional.<Integer>absent(), true, Optional.<String>absent(), Optional.<String>absent(),
+                    httpProxy);
         }
 
-        { // specify host, port, use_ssl
+        { // specify https=true explicitly
             String host = "my_host";
-            int port = 8080;
-            boolean useSsl = true;
-            Map<String, Object> httpProxyMap = ImmutableMap.<String, Object>of(
-                    "host", host,
-                    "port", 8080,
-                    "https", true);
-            ConfigSource conf = config.deepCopy().set("http_proxy", httpProxyMap);
-            S3PluginTask task = conf.loadConfig(S3PluginTask.class);
-
-            assertHttpProxy(new HttpProxy(host, Optional.of(port), true, Optional.<String>absent(), Optional.<String>absent()),
-                    task.getHttpProxy().get());
+            ConfigSource conf = config.deepCopy()
+                    .set("host", host)
+                    .set("https", true);
+            HttpProxy httpProxy = conf.loadConfig(HttpProxy.class);
+            assertHttpProxy(host, Optional.<Integer>absent(), true, Optional.<String>absent(), Optional.<String>absent(),
+                    httpProxy);
         }
 
-        { // specify host, port, use_ssl, user, password
+        { // specify https=false
+            String host = "my_host";
+            ConfigSource conf = config.deepCopy()
+                    .set("host", host)
+                    .set("https", false);
+            HttpProxy httpProxy = conf.loadConfig(HttpProxy.class);
+            assertHttpProxy(host, Optional.<Integer>absent(), false, Optional.<String>absent(), Optional.<String>absent(),
+                    httpProxy);
+        }
+
+        { // specify host, port
             String host = "my_host";
             int port = 8080;
-            boolean useSsl = true;
+            ConfigSource conf = config.deepCopy()
+                    .set("host", host)
+                    .set("port", port);
+            HttpProxy httpProxy = conf.loadConfig(HttpProxy.class);
+            assertHttpProxy(host, Optional.of(port), true, Optional.<String>absent(), Optional.<String>absent(),
+                    httpProxy);
+        }
+
+        { // specify host, port, user, password
+            String host = "my_host";
+            int port = 8080;
             String user = "my_user";
             String password = "my_pass";
-            Map<String, Object> httpProxyMap = ImmutableMap.<String, Object>of(
-                    "host", host,
-                    "port", 8080,
-                    "https", true,
-                    "user", user,
-                    "password", password);
-            ConfigSource conf = config.deepCopy().set("http_proxy", httpProxyMap);
-            S3PluginTask task = conf.loadConfig(S3PluginTask.class);
-
-            assertHttpProxy(new HttpProxy(host, Optional.of(port), true, Optional.of(user), Optional.of(password)),
-                    task.getHttpProxy().get());
+            ConfigSource conf = config.deepCopy()
+                    .set("host", host)
+                    .set("port", port)
+                    .set("user", user)
+                    .set("password", password);
+            HttpProxy httpProxy = conf.loadConfig(HttpProxy.class);
+            assertHttpProxy(host, Optional.of(port), true, Optional.of(user), Optional.of(password),
+                    httpProxy);
         }
     }
 
@@ -92,21 +97,24 @@ public class TestHttpProxy
         config.set("bucket", "my_bucket").set("path_prefix", "my_path_prefix");
     }
 
-    private static void assertHttpProxy(HttpProxy expected, HttpProxy actual)
+    private static void assertHttpProxy(String host, Optional<Integer> port, boolean https, Optional<String> user, Optional<String> password,
+            HttpProxy actual)
     {
-        assertEquals(expected.getHost(), actual.getHost());
-        assertEquals(expected.getPort().isPresent(), actual.getPort().isPresent());
-        if (expected.getPort().isPresent()) {
-            assertEquals(expected.getPort().get(), actual.getPort().get());
+        assertEquals(host, actual.getHost());
+        assertEquals(port.isPresent(), actual.getPort().isPresent());
+        if (port.isPresent()) {
+            assertEquals(port.get(), actual.getPort().get());
         }
-        assertEquals(expected.useHttps(), actual.useHttps());
-        assertEquals(expected.getUser().isPresent(), actual.getUser().isPresent());
-        if (expected.getUser().isPresent()) {
-            assertEquals(expected.getUser().get(), actual.getUser().get());
+
+        assertEquals(https, actual.getHttps());
+
+        assertEquals(user.isPresent(), actual.getUser().isPresent());
+        if (user.isPresent()) {
+            assertEquals(user.get(), actual.getUser().get());
         }
-        assertEquals(expected.getPassword().isPresent(), actual.getPassword().isPresent());
-        if (expected.getPassword().isPresent()) {
-            assertEquals(expected.getPassword().get(), actual.getPassword().get());
+        assertEquals(password.isPresent(), actual.getPassword().isPresent());
+        if (password.isPresent()) {
+            assertEquals(password.get(), actual.getPassword().get());
         }
     }
 }
