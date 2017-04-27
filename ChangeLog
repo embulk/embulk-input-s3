@@ -1,3 +1,8 @@
+Release 0.2.11 - 2017-04-23
+
+* Support http_proxy option [#48,#51,#54]
+* Upgrade gradle v3.2.1, Embulk v0.8.18, gradle bintray plugin v1.7 [#46]
+
 Release 0.2.10 - 2017-03-09
 
 * Changed HTTP responses handling: throw ConfigException if error code is ExpiredToken. (@tvhung83) [#43]
