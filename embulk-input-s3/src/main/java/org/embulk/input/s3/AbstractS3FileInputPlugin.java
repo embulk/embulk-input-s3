@@ -12,6 +12,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
+import org.embulk.exec.NoSampleException;
 import org.slf4j.Logger;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
@@ -99,7 +100,11 @@ public abstract class AbstractS3FileInputPlugin
         task.setFiles(listFiles(task));
 
         // number of processors is same with number of files
-        return resume(task.dump(), task.getFiles().getTaskCount(), control);
+        try {
+            return resume(task.dump(), task.getFiles().getTaskCount(), control);
+        } catch (NoSampleException nse) {
+            throw new ConfigException("Could not find the path to load files.");
+        }
     }
 
     @Override
