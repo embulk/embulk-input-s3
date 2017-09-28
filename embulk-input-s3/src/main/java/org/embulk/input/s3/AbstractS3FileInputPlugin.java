@@ -97,14 +97,15 @@ public abstract class AbstractS3FileInputPlugin
         PluginTask task = config.loadConfig(getTaskClass());
 
         // list files recursively
-        task.setFiles(listFiles(task));
-
-        // number of processors is same with number of files
-        try {
-            return resume(task.dump(), task.getFiles().getTaskCount(), control);
-        } catch (NoSampleException nse) {
+        FileList listFiles = listFiles(task);
+        if (listFiles.getTaskCount() == 0) {
             throw new ConfigException("Could not find the path to load files.");
         }
+
+        task.setFiles(listFiles);
+
+        // number of processors is same with number of files
+        return resume(task.dump(), task.getFiles().getTaskCount(), control);
     }
 
     @Override
