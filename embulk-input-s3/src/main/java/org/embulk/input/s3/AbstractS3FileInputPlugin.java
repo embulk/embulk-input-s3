@@ -21,6 +21,7 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.Protocol;
@@ -353,9 +354,14 @@ public abstract class AbstractS3FileInputPlugin
             if (!iterator.hasNext()) {
                 return null;
             }
-            GetObjectRequest request = new GetObjectRequest(bucket, iterator.next());
-            S3Object obj = client.getObject(request);
-            return new ResumableInputStream(obj.getObjectContent(), new S3InputStreamReopener(client, request, obj.getObjectMetadata().getContentLength()));
+
+            try {
+                GetObjectRequest request = new GetObjectRequest(bucket, iterator.next());
+                S3Object obj = client.getObject(request);
+                return new ResumableInputStream(obj.getObjectContent(), new S3InputStreamReopener(client, request, obj.getObjectMetadata().getContentLength()));
+            } catch (AmazonS3Exception ex) {
+                return null;
+            }
         }
 
         @Override
