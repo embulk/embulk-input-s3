@@ -368,10 +368,11 @@ public abstract class AbstractS3FileInputPlugin
                 S3Object obj = client.getObject(request);
                 return new ResumableInputStream(obj.getObjectContent(), new S3InputStreamReopener(client, request, obj.getObjectMetadata().getContentLength()));
             } catch (AmazonS3Exception ex) {
+                 int statusCode = ex.getStatusCode();
                 // HTTP 403 errors caused by a glacier object.
-                if (ex.getStatusCode() == 403 && "InvalidObjectState".equalsIgnoreCase(ex.getErrorCode())) {
+                if (statusCode == 403 && "InvalidObjectState".equalsIgnoreCase(ex.getErrorCode())) {
                     if (this.skip_glacier_object) {
-                        log.warn("Skipped \"s3://{}/{}\" that stored at Gracier. status code: {}", this.bucket, request.getKey(), ex.getStatusCode());
+                        log.warn("Skipped \"s3://{}/{}\" that stored at Gracier. status code: {}", this.bucket, request.getKey(), statusCode);
                         return null;
                     } else {
                         throw new ConfigException(ex);
