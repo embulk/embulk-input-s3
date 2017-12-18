@@ -22,6 +22,7 @@ import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
+import org.embulk.config.ConfigException;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.Protocol;
@@ -79,6 +80,10 @@ public abstract class AbstractS3FileInputPlugin
         @Config("incremental")
         @ConfigDefault("true")
         public boolean getIncremental();
+
+        @Config("skip_glacier_object")
+        @ConfigDefault("false")
+        public boolean getSkipGlacierObject();
 
         // TODO timeout, ssl, etc
 
@@ -340,12 +345,14 @@ public abstract class AbstractS3FileInputPlugin
         private AmazonS3Client client;
         private final String bucket;
         private final Iterator<String> iterator;
+        private final boolean skip_glacier_object;
 
         public SingleFileProvider(PluginTask task, int taskIndex)
         {
             this.client = newS3Client(task);
             this.bucket = task.getBucket();
             this.iterator = task.getFiles().get(taskIndex).iterator();
+            this.skip_glacier_object = task.getSkipGlacierObject();
         }
 
         @Override
@@ -355,12 +362,23 @@ public abstract class AbstractS3FileInputPlugin
                 return null;
             }
 
+            GetObjectRequest request = null;
             try {
-                GetObjectRequest request = new GetObjectRequest(bucket, iterator.next());
+                request = new GetObjectRequest(bucket, iterator.next());
                 S3Object obj = client.getObject(request);
                 return new ResumableInputStream(obj.getObjectContent(), new S3InputStreamReopener(client, request, obj.getObjectMetadata().getContentLength()));
             } catch (AmazonS3Exception ex) {
-                return null;
+                // HTTP 403 errors caused by a glacier object.
+                if (ex.getStatusCode() == 403 && "InvalidObjectState".equalsIgnoreCase(ex.getErrorCode())) {
+                    if (this.skip_glacier_object) {
+                        log.warn("Skipped \"s3://{}/{}\" that stored at Gracier. status code: {}", this.bucket, request.getKey(), ex.getStatusCode());
+                        return null;
+                    } else {
+                        throw new ConfigException(ex);
+                    }
+                } else {
+                    throw ex;
+                }
             }
         }
 
