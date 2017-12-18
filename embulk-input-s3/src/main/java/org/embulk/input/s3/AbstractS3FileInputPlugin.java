@@ -22,7 +22,6 @@ import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
-import org.embulk.config.ConfigException;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.Protocol;
