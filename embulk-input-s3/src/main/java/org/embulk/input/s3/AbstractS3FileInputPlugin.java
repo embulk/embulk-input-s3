@@ -21,7 +21,7 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.AmazonS3Exception;
+import com.amazonaws.services.s3.model.StorageClass;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.Protocol;
@@ -201,7 +201,7 @@ public abstract class AbstractS3FileInputPlugin
 
             FileList.Builder builder = new FileList.Builder(task);
             listS3FilesByPrefix(builder, client, bucketName,
-                    task.getPathPrefix(), task.getLastPath());
+                    task.getPathPrefix(), task.getLastPath(), task.getSkipGlacierObject());
             return builder.build();
         }
         catch (AmazonServiceException ex) {
@@ -224,13 +224,21 @@ public abstract class AbstractS3FileInputPlugin
      */
     public static void listS3FilesByPrefix(FileList.Builder builder,
             AmazonS3Client client, String bucketName,
-            String prefix, Optional<String> lastPath)
+            String prefix, Optional<String> lastPath, boolean skipGlacierObject)
     {
         String lastKey = lastPath.orNull();
         do {
             ListObjectsRequest req = new ListObjectsRequest(bucketName, prefix, lastKey, null, 1024);
             ObjectListing ol = client.listObjects(req);
             for (S3ObjectSummary s : ol.getObjectSummaries()) {
+                if (s.getStorageClass().equals(StorageClass.Glacier.toString())) {
+                    if (skipGlacierObject) {
+                        Exec.getLogger("AbstractS3FileInputPlugin.class").warn("Skipped \"s3://{}/{}\" that stored at Gracier.", bucketName, s.getKey());
+                        continue;
+                    } else {
+                        throw new ConfigException("Detected an object stored at Gracier. Set \"skip_glacier_object\" option to \"true\" to skip this.");
+                    }
+                }
                 if (s.getSize() > 0) {
                     builder.add(s.getKey(), s.getSize());
                     if (!builder.needsMore()) {
@@ -344,14 +352,12 @@ public abstract class AbstractS3FileInputPlugin
         private AmazonS3Client client;
         private final String bucket;
         private final Iterator<String> iterator;
-        private final boolean skip_glacier_object;
 
         public SingleFileProvider(PluginTask task, int taskIndex)
         {
             this.client = newS3Client(task);
             this.bucket = task.getBucket();
             this.iterator = task.getFiles().get(taskIndex).iterator();
-            this.skip_glacier_object = task.getSkipGlacierObject();
         }
 
         @Override
@@ -360,26 +366,9 @@ public abstract class AbstractS3FileInputPlugin
             if (!iterator.hasNext()) {
                 return null;
             }
-
-            GetObjectRequest request = null;
-            try {
-                request = new GetObjectRequest(bucket, iterator.next());
-                S3Object obj = client.getObject(request);
-                return new ResumableInputStream(obj.getObjectContent(), new S3InputStreamReopener(client, request, obj.getObjectMetadata().getContentLength()));
-            } catch (AmazonS3Exception ex) {
-                int statusCode = ex.getStatusCode();
-                // HTTP 403 errors caused by a glacier object.
-                if (statusCode == 403 && "InvalidObjectState".equalsIgnoreCase(ex.getErrorCode())) {
-                    if (this.skip_glacier_object) {
-                        log.warn("Skipped \"s3://{}/{}\" that stored at Gracier. status code: {}", this.bucket, request.getKey(), statusCode);
-                        return null;
-                    } else {
-                        throw new ConfigException(ex);
-                    }
-                } else {
-                    throw ex;
-                }
-            }
+            GetObjectRequest request = new GetObjectRequest(bucket, iterator.next());
+            S3Object obj = client.getObject(request);
+            return new ResumableInputStream(obj.getObjectContent(), new S3InputStreamReopener(client, request, obj.getObjectMetadata().getContentLength()));
         }
 
         @Override
