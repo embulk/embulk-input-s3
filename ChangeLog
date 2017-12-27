@@ -1,3 +1,6 @@
+Release 0.2.12 - 2017-12-27
+* Upgrade AWS SDK 1.10.33 to 1.11.253 to allow additional regions [#59]
+
 Release 0.2.11 - 2017-04-23
 
 * Support http_proxy option [#48,#51,#54]
