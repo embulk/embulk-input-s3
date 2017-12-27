@@ -2,12 +2,11 @@ package org.embulk.input.riak_cs;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3Client;
 import org.embulk.config.Config;
 import org.embulk.input.s3.AbstractS3FileInputPlugin;
 
 import static com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
-import static com.amazonaws.services.s3.AmazonS3Client.*;
+import static com.amazonaws.services.s3.AmazonS3Client.S3_SERVICE_NAME;
 import static com.amazonaws.util.AwsHostNameUtils.parseRegion;
 import static com.amazonaws.util.RuntimeHttpUtils.toUri;
 
