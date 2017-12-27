@@ -1,21 +1,18 @@
 package org.embulk.input.s3;
 
 import java.util.List;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.InputStream;
 
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableList;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import org.slf4j.Logger;
-import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.services.s3.model.ObjectListing;
@@ -44,8 +41,6 @@ import org.embulk.spi.util.RetryExecutor.RetryGiveupException;
 import org.embulk.util.aws.credentials.AwsCredentials;
 import org.embulk.util.aws.credentials.AwsCredentialsTask;
 
-import static com.amazonaws.Protocol.HTTP;
-import static com.amazonaws.Protocol.HTTPS;
 import static org.embulk.spi.util.RetryExecutor.retryExecutor;
 
 public abstract class AbstractS3FileInputPlugin
@@ -133,9 +128,22 @@ public abstract class AbstractS3FileInputPlugin
         // do nothing
     }
 
-    protected AmazonS3Client newS3Client(PluginTask task)
-    {
-        return new AmazonS3Client(getCredentialsProvider(task), getClientConfiguration(task));
+    /**
+     * Provide an overridable default client.
+     * Since this returns an immutable object, it is not for any further customizations by mutating,
+     * e.g., {@link AmazonS3#setEndpoint} will throw a runtime {@link UnsupportedOperationException}
+     * Subclass's customization should be done through {@link AbstractS3FileInputPlugin#defaultS3ClientBuilder}.
+     */
+    protected AmazonS3 newS3Client(PluginTask task) {
+        return defaultS3ClientBuilder(task).build();
+    }
+
+    /** A base builder for the subclasses to then customize. */
+    protected AmazonS3ClientBuilder defaultS3ClientBuilder(PluginTask task) {
+        return AmazonS3ClientBuilder
+                .standard()
+                .withCredentials(getCredentialsProvider(task))
+                .withClientConfiguration(getClientConfiguration(task));
     }
 
     protected AWSCredentialsProvider getCredentialsProvider(PluginTask task)
@@ -187,7 +195,7 @@ public abstract class AbstractS3FileInputPlugin
     private FileList listFiles(PluginTask task)
     {
         try {
-            AmazonS3Client client = newS3Client(task);
+            AmazonS3 client = newS3Client(task);
             String bucketName = task.getBucket();
 
             if (task.getPathPrefix().equals("/")) {
@@ -218,7 +226,7 @@ public abstract class AbstractS3FileInputPlugin
      * The resulting list does not include the file that's size == 0.
      */
     public static void listS3FilesByPrefix(FileList.Builder builder,
-            AmazonS3Client client, String bucketName,
+            AmazonS3 client, String bucketName,
             String prefix, Optional<String> lastPath)
     {
         String lastKey = lastPath.orNull();
@@ -250,11 +258,11 @@ public abstract class AbstractS3FileInputPlugin
     {
         private final Logger log = Exec.getLogger(S3InputStreamReopener.class);
 
-        private final AmazonS3Client client;
+        private final AmazonS3 client;
         private final GetObjectRequest request;
         private final long contentLength;
 
-        public S3InputStreamReopener(AmazonS3Client client, GetObjectRequest request, long contentLength)
+        public S3InputStreamReopener(AmazonS3 client, GetObjectRequest request, long contentLength)
         {
             this.client = client;
             this.request = request;
@@ -336,7 +344,7 @@ public abstract class AbstractS3FileInputPlugin
     private class SingleFileProvider
             implements InputStreamFileInput.Provider
     {
-        private AmazonS3Client client;
+        private AmazonS3 client;
         private final String bucket;
         private final Iterator<String> iterator;
 
