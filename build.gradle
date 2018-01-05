@@ -7,7 +7,7 @@ import com.github.jrubygradle.JRubyExec
 
 allprojects {
     group = 'org.embulk.input.s3'
-    version = '0.2.11'
+    version = '0.2.12'
 
     apply plugin: 'com.jfrog.bintray'
     apply plugin: 'maven-publish'
@@ -63,9 +63,9 @@ subprojects {
     dependencies {
         compile  "org.embulk:embulk-core:0.8.18"
         provided "org.embulk:embulk-core:0.8.18"
-        compile "com.amazonaws:aws-java-sdk-s3:1.10.33"
+        compile "com.amazonaws:aws-java-sdk-s3:1.11.253"
         runtime "org.slf4j:jcl-over-slf4j:1.7.12"  // aws-sdk uses Apache Commons Logging and Embulk uses slf4j
-        testCompile "com.amazonaws:aws-java-sdk-sts:1.10.33"
+        testCompile "com.amazonaws:aws-java-sdk-sts:1.11.253"
         testCompile "junit:junit:4.+"
         testCompile "org.mockito:mockito-core:1.+"
         testCompile "org.embulk:embulk-standards:0.8.18"
