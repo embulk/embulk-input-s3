@@ -91,7 +91,9 @@ subprojects {
             script "${project.projectDir.absolutePath}/build/gemspec"
             doLast { ant.move(file: "${project.name}-${project.version}.gem", todir: "${parent.projectDir}/pkg") }
 	}
-    } else {
+    }
+
+    if (![project(":embulk-input-riak_cs")].contains(project)) {
         // publishing
         publishing {
             publications {
