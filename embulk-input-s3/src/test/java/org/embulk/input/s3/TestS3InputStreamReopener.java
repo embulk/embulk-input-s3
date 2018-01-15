@@ -1,6 +1,6 @@
 package org.embulk.input.s3;
 
-import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
@@ -27,12 +27,12 @@ public class TestS3InputStreamReopener
     @Rule
     public EmbulkTestRuntime runtime = new EmbulkTestRuntime();
 
-    private AmazonS3Client client;
+    private AmazonS3 client;
 
     @Before
     public void createResources()
     {
-        client = mock(AmazonS3Client.class);
+        client = mock(AmazonS3.class);
     }
 
     @Test
