@@ -241,10 +241,10 @@ public abstract class AbstractS3FileInputPlugin
             for (S3ObjectSummary s : ol.getObjectSummaries()) {
                 if (s.getStorageClass().equals(StorageClass.Glacier.toString())) {
                     if (skipGlacierObject) {
-                        Exec.getLogger("AbstractS3FileInputPlugin.class").warn("Skipped \"s3://{}/{}\" that stored at Gracier.", bucketName, s.getKey());
+                        Exec.getLogger("AbstractS3FileInputPlugin.class").warn("Skipped \"s3://{}/{}\" that stored at Glacier.", bucketName, s.getKey());
                         continue;
                     } else {
-                        throw new ConfigException("Detected an object stored at Gracier. Set \"skip_glacier_object\" option to \"true\" to skip this.");
+                        throw new ConfigException("Detected an object stored at Glacier. Set \"skip_glacier_object\" option to \"true\" to skip this.");
                     }
                 }
                 if (s.getSize() > 0) {
