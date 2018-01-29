@@ -9,7 +9,6 @@ import org.junit.Test;
 
 public class TestRiakCsFileInputPlugin
 {
-
     @Rule
     public EmbulkTestRuntime runtime = new EmbulkTestRuntime();
 
