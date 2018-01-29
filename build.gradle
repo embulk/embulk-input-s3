@@ -92,7 +92,7 @@ subprojects {
             jrubyArgs '-rrubygems/gem_runner', "-eGem::GemRunner.new.run(ARGV)", 'build'
             script "${project.projectDir.absolutePath}/build/gemspec"
             doLast { ant.move(file: "${project.name}-${project.version}.gem", todir: "${parent.projectDir}/pkg") }
-	}
+        }
     }
 
     if (![project(":embulk-input-riak_cs")].contains(project)) {
@@ -115,7 +115,7 @@ subprojects {
                      }
                  }
             }
-	}
+        }
     }
     // add tests/javadoc/source jar tasks as artifacts to be released
     task testsJar(type: Jar, dependsOn: classes) {
