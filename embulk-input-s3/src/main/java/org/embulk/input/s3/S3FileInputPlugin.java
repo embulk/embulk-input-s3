@@ -2,7 +2,6 @@ package org.embulk.input.s3;
 
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.google.common.base.Optional;
 import org.embulk.config.Config;

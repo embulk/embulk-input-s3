@@ -113,7 +113,6 @@ public class TestAwsCredentials
         String origAccessKeyId = System.getProperty("aws.accessKeyId");
         String origSecretKey = System.getProperty("aws.secretKey");
         try {
-
             ConfigSource config = this.config.deepCopy().set("auth_method", "properties");
             System.setProperty("aws.accessKeyId", EMBULK_S3_TEST_ACCESS_KEY_ID);
             System.setProperty("aws.secretKey", EMBULK_S3_TEST_SECRET_ACCESS_KEY);
