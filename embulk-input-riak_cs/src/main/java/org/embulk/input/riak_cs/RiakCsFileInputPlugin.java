@@ -33,14 +33,7 @@ public class RiakCsFileInputPlugin
 
         return super
                 .defaultS3ClientBuilder(task)
-                .withEndpointConfiguration(new EndpointConfiguration(
-                        t.getEndpoint(),
-                        // Although client will treat endpoint's region as the signer region
-                        // if we left this as null, but such that behaviour is undocumented,
-                        // so it is explicitly calculated here for future-proofing.
-                        parseRegion(
-                                toUri(t.getEndpoint(), getClientConfiguration(task)).getHost(),
-                                S3_SERVICE_NAME)))
+                .withEndpointConfiguration(new EndpointConfiguration(t.getEndpoint(), null))
                 .build();
     }
 
