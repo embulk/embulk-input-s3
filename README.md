@@ -14,6 +14,8 @@
 
 - **endpoint** S3 endpoint login user name (string, optional)
 
+- **region** S3 region. endpoint will be in effect if you specify both of endpoint and region (string, optional)
+
 - **http_proxy** http proxy configuration to use when accessing AWS S3 via http proxy. (optional)
   - **host** proxy host (string, required)
   - **port** proxy port (int, optional)
@@ -151,7 +153,7 @@ in:
 ```
 ./gradlew clean gem classpath
 ./gradlew gemPush # release plugin gems to RubyGems.org
-./gradlew bintrayUpload # release embulk-util-aws-credentials to Bintray maven repo
+./gradlew bintrayUpload # release embulk-(input-s3|input-riak_cs|util-aws-credentials) to Bintray maven repo
 ```
 
 ## Test

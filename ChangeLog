@@ -1,3 +1,7 @@
+Release 0.2.13 - 2018-02-01
+* Different resolved bucket's region when upgrading AWS SDK to 1.11.253 [#63]
+* Add Bintray settings for embulk-input-s3 [#62]
+
 Release 0.2.12 - 2017-12-27
 * Upgrade AWS SDK 1.10.33 to 1.11.253 to allow additional regions [#59]
 
