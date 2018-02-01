@@ -1,46 +1,46 @@
 package org.embulk.input.s3;
 
-import java.util.List;
-import java.util.Iterator;
-import java.io.IOException;
-import java.io.InterruptedIOException;
-import java.io.InputStream;
-
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.ClientConfiguration;
+import com.amazonaws.Protocol;
+import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.GetObjectRequest;
+import com.amazonaws.services.s3.model.ListObjectsRequest;
+import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.amazonaws.services.s3.model.StorageClass;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
-import org.slf4j.Logger;
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.services.s3.model.ListObjectsRequest;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
-import com.amazonaws.services.s3.model.ObjectListing;
-import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.StorageClass;
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.AmazonServiceException;
-import com.amazonaws.Protocol;
 import org.embulk.config.Config;
-import org.embulk.config.ConfigInject;
 import org.embulk.config.ConfigDefault;
-import org.embulk.config.Task;
-import org.embulk.config.TaskSource;
-import org.embulk.config.ConfigSource;
 import org.embulk.config.ConfigDiff;
-import org.embulk.config.TaskReport;
 import org.embulk.config.ConfigException;
+import org.embulk.config.ConfigInject;
+import org.embulk.config.ConfigSource;
+import org.embulk.config.Task;
+import org.embulk.config.TaskReport;
+import org.embulk.config.TaskSource;
 import org.embulk.spi.BufferAllocator;
 import org.embulk.spi.Exec;
 import org.embulk.spi.FileInputPlugin;
 import org.embulk.spi.TransactionalFileInput;
 import org.embulk.spi.util.InputStreamFileInput;
 import org.embulk.spi.util.ResumableInputStream;
-import org.embulk.spi.util.RetryExecutor.Retryable;
 import org.embulk.spi.util.RetryExecutor.RetryGiveupException;
+import org.embulk.spi.util.RetryExecutor.Retryable;
 import org.embulk.util.aws.credentials.AwsCredentials;
 import org.embulk.util.aws.credentials.AwsCredentialsTask;
+import org.slf4j.Logger;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InterruptedIOException;
+import java.util.Iterator;
+import java.util.List;
 
 import static org.embulk.spi.util.RetryExecutor.retryExecutor;
 
@@ -139,12 +139,14 @@ public abstract class AbstractS3FileInputPlugin
      * e.g., {@link AmazonS3#setEndpoint} will throw a runtime {@link UnsupportedOperationException}
      * Subclass's customization should be done through {@link AbstractS3FileInputPlugin#defaultS3ClientBuilder}.
      */
-    protected AmazonS3 newS3Client(PluginTask task) {
+    protected AmazonS3 newS3Client(PluginTask task)
+    {
         return defaultS3ClientBuilder(task).build();
     }
 
     /** A base builder for the subclasses to then customize. */
-    protected AmazonS3ClientBuilder defaultS3ClientBuilder(PluginTask task) {
+    protected AmazonS3ClientBuilder defaultS3ClientBuilder(PluginTask task)
+    {
         return AmazonS3ClientBuilder
                 .standard()
                 .withCredentials(getCredentialsProvider(task))
@@ -163,7 +165,7 @@ public abstract class AbstractS3FileInputPlugin
         //clientConfig.setProtocol(Protocol.HTTP);
         clientConfig.setMaxConnections(50); // SDK default: 50
         clientConfig.setMaxErrorRetry(3); // SDK default: 3
-        clientConfig.setSocketTimeout(8*60*1000); // SDK default: 50*1000
+        clientConfig.setSocketTimeout(8 * 60 * 1000); // SDK default: 50*1000
 
         // set http proxy
         if (task.getHttpProxy().isPresent()) {
@@ -289,7 +291,7 @@ public abstract class AbstractS3FileInputPlugin
                 return retryExecutor()
                     .withRetryLimit(3)
                     .withInitialRetryWait(500)
-                    .withMaxRetryWait(30*1000)
+                    .withMaxRetryWait(30 * 1000)
                     .runInterruptible(new Retryable<InputStream>() {
                         @Override
                         public InputStream call() throws InterruptedIOException
@@ -310,10 +312,11 @@ public abstract class AbstractS3FileInputPlugin
                                 throws RetryGiveupException
                         {
                             String message = String.format("S3 GET request failed. Retrying %d/%d after %d seconds. Message: %s",
-                                    retryCount, retryLimit, retryWait/1000, exception.getMessage());
+                                    retryCount, retryLimit, retryWait / 1000, exception.getMessage());
                             if (retryCount % 3 == 0) {
                                 log.warn(message, exception);
-                            } else {
+                            }
+                            else {
                                 log.warn(message);
                             }
                         }
@@ -324,10 +327,12 @@ public abstract class AbstractS3FileInputPlugin
                         {
                         }
                     });
-            } catch (RetryGiveupException ex) {
+            }
+            catch (RetryGiveupException ex) {
                 Throwables.propagateIfInstanceOf(ex.getCause(), IOException.class);
                 throw Throwables.propagate(ex.getCause());
-            } catch (InterruptedException ex) {
+            }
+            catch (InterruptedException ex) {
                 throw new InterruptedIOException();
             }
         }
@@ -342,7 +347,9 @@ public abstract class AbstractS3FileInputPlugin
             super(task.getBufferAllocator(), new SingleFileProvider(task, taskIndex));
         }
 
-        public void abort() { }
+        public void abort()
+        {
+        }
 
         public TaskReport commit()
         {
@@ -350,7 +357,9 @@ public abstract class AbstractS3FileInputPlugin
         }
 
         @Override
-        public void close() { }
+        public void close()
+        {
+        }
     }
 
     // TODO create single-file InputStreamFileInput utility
@@ -380,6 +389,8 @@ public abstract class AbstractS3FileInputPlugin
         }
 
         @Override
-        public void close() { }
+        public void close()
+        {
+        }
     }
 }

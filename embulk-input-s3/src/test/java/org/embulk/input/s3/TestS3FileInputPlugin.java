@@ -1,10 +1,11 @@
 package org.embulk.input.s3;
 
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.ListObjectsRequest;
-import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.services.s3.model.StorageClass;
+import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.Region;
+import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -31,6 +32,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.embulk.input.s3.S3FileInputPlugin.S3PluginTask;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -159,6 +161,50 @@ public class TestS3FileInputPlugin
         }
     }
 
+    @Test
+    public void configuredEndpoint()
+    {
+        S3PluginTask task = config.deepCopy()
+                .set("endpoint", "s3-ap-southeast-1.amazonaws.com")
+                .set("region", "ap-southeast-2")
+                .loadConfig(S3PluginTask.class);
+        S3FileInputPlugin plugin = runtime.getInstance(S3FileInputPlugin.class);
+        AmazonS3 s3Client = plugin.newS3Client(task);
+
+        // Should not crash and favor the endpoint over the region configuration (there's a warning log though)
+        assertEquals(s3Client.getRegion(), Region.AP_Singapore);
+    }
+
+    @Test
+    public void configuredRegion()
+    {
+        S3PluginTask task = config.deepCopy()
+                .set("region", "ap-southeast-2")
+                .remove("endpoint")
+                .loadConfig(S3PluginTask.class);
+        S3FileInputPlugin plugin = runtime.getInstance(S3FileInputPlugin.class);
+        AmazonS3 s3Client = plugin.newS3Client(task);
+
+        // Should reflect the region configuration as is
+        assertEquals(s3Client.getRegion(), Region.AP_Sydney);
+    }
+
+    @Test
+    public void unconfiguredEndpointAndRegion()
+    {
+        S3PluginTask task = config.deepCopy()
+                .remove("endpoint")
+                .remove("region")
+                .loadConfig(S3PluginTask.class);
+        S3FileInputPlugin plugin = runtime.getInstance(S3FileInputPlugin.class);
+        AmazonS3 s3Client = plugin.newS3Client(task);
+
+        // US Standard region is a 'generic' one (s3.amazonaws.com), the expectation here that
+        // the S3 client should not eagerly resolves for a specific region on client side.
+        // Please refer to org.embulk.input.s3.S3FileInputPlugin#newS3Client for the details.
+        assertEquals(s3Client.getRegion(), Region.US_Standard);
+    }
+  
     @Test(expected = ConfigException.class)
     public void useSkipGracierObject() throws Exception
     {

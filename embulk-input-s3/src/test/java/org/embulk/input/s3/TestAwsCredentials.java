@@ -1,13 +1,14 @@
 package org.embulk.input.s3;
 
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.auth.policy.Policy;
 import com.amazonaws.auth.policy.Resource;
 import com.amazonaws.auth.policy.Statement;
 import com.amazonaws.auth.policy.actions.S3Actions;
-import com.amazonaws.internal.StaticCredentialsProvider;
-import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClient;
+import com.amazonaws.services.securitytoken.AWSSecurityTokenService;
+import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder;
 import com.amazonaws.services.securitytoken.model.Credentials;
 import com.amazonaws.services.securitytoken.model.GetFederationTokenRequest;
 import com.amazonaws.services.securitytoken.model.GetFederationTokenResult;
@@ -112,7 +113,6 @@ public class TestAwsCredentials
         String origAccessKeyId = System.getProperty("aws.accessKeyId");
         String origSecretKey = System.getProperty("aws.secretKey");
         try {
-
             ConfigSource config = this.config.deepCopy().set("auth_method", "properties");
             System.setProperty("aws.accessKeyId", EMBULK_S3_TEST_ACCESS_KEY_ID);
             System.setProperty("aws.secretKey", EMBULK_S3_TEST_SECRET_ACCESS_KEY);
@@ -148,8 +148,9 @@ public class TestAwsCredentials
 
     private static BasicSessionCredentials getSessionCredentials()
     {
-        AWSSecurityTokenServiceClient stsClient = new AWSSecurityTokenServiceClient(
-                new StaticCredentialsProvider(new BasicAWSCredentials(EMBULK_S3_TEST_ACCESS_KEY_ID, EMBULK_S3_TEST_SECRET_ACCESS_KEY)));
+        AWSSecurityTokenService stsClient = AWSSecurityTokenServiceClientBuilder.standard().withCredentials(
+                new AWSStaticCredentialsProvider(new BasicAWSCredentials(EMBULK_S3_TEST_ACCESS_KEY_ID, EMBULK_S3_TEST_SECRET_ACCESS_KEY))
+        ).build();
 
         GetFederationTokenRequest getFederationTokenRequest = new GetFederationTokenRequest();
         getFederationTokenRequest.setDurationSeconds(7200);
