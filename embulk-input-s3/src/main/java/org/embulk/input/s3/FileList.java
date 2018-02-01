@@ -1,30 +1,31 @@
 package org.embulk.input.s3;
 
-import java.util.List;
-import java.util.AbstractList;
-import java.util.ArrayList;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
-import java.util.regex.Pattern;
-import java.util.regex.Matcher;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.BufferedOutputStream;
-import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Optional;
+import com.google.common.base.Throwables;
+
 import org.embulk.config.Config;
 import org.embulk.config.ConfigDefault;
 import org.embulk.config.ConfigSource;
-import com.google.common.base.Throwables;
-import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonCreator;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.AbstractList;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Pattern;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 // this class should be moved to embulk-core
 public class FileList
@@ -60,10 +61,16 @@ public class FileList
         }
 
         @JsonProperty("index")
-        public int getIndex() { return index; }
+        public int getIndex()
+        {
+            return index;
+        }
 
         @JsonProperty("size")
-        public long getSize() { return size; }
+        public long getSize()
+        {
+            return size;
+        }
     }
 
     public static class Builder

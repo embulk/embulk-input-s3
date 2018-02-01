@@ -1,6 +1,5 @@
 package org.embulk.util.aws.credentials;
 
-import com.google.common.base.Optional;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.AWSSessionCredentials;
@@ -14,6 +13,7 @@ import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.amazonaws.auth.SystemPropertiesCredentialsProvider;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.auth.profile.ProfilesConfigFile;
+import com.google.common.base.Optional;
 import org.embulk.config.ConfigException;
 import org.embulk.spi.Exec;
 import org.embulk.spi.unit.LocalFile;
@@ -21,7 +21,9 @@ import org.slf4j.Logger;
 
 public abstract class AwsCredentials
 {
-    private AwsCredentials() { }
+    private AwsCredentials()
+    {
+    }
 
     public static AWSCredentialsProvider getAWSCredentialsProvider(AwsCredentialsTaskWithPrefix task)
     {
@@ -60,7 +62,9 @@ public abstract class AwsCredentials
                         return new AnonymousAWSCredentials();
                     }
 
-                    public void refresh() { }
+                    public void refresh()
+                    {
+                    }
                 };
             }
             else {
@@ -76,7 +80,9 @@ public abstract class AwsCredentials
                         return creds;
                     }
 
-                    public void refresh() { }
+                    public void refresh()
+                    {
+                    }
                 };
             }
 
@@ -137,13 +143,15 @@ public abstract class AwsCredentials
                     return new AnonymousAWSCredentials();
                 }
 
-                public void refresh() { }
+                public void refresh()
+                {
+                }
             };
 
         case "session":
             {
                 String accessKeyId = require(task.getAccessKeyId(),
-                        "'" + accessKeyIdOption +"', '" + secretAccessKeyOption + "', '" + sessionTokenOption + "'");
+                        "'" + accessKeyIdOption + "', '" + secretAccessKeyOption + "', '" + sessionTokenOption + "'");
                 String secretAccessKey = require(task.getSecretAccessKey(),
                         "'" + secretAccessKeyOption + "', '" + sessionTokenOption + "'");
                 String sessionToken = require(task.getSessionToken(),
@@ -157,7 +165,9 @@ public abstract class AwsCredentials
                         return creds;
                     }
 
-                    public void refresh() { }
+                    public void refresh()
+                    {
+                    }
                 };
             }
 
@@ -188,7 +198,9 @@ public abstract class AwsCredentials
                 return creds;
             }
 
-            public void refresh() { }
+            public void refresh()
+            {
+            }
         };
     }
 
