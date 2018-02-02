@@ -206,7 +206,7 @@ public class TestS3FileInputPlugin
     }
   
     @Test(expected = ConfigException.class)
-    public void useSkipGracierObject() throws Exception
+    public void useSkipGlacierObjects() throws Exception
     {
         AmazonS3 client;
         client = mock(AmazonS3.class);

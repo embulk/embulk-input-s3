@@ -75,9 +75,9 @@ public abstract class AbstractS3FileInputPlugin
         @ConfigDefault("true")
         public boolean getIncremental();
 
-        @Config("skip_glacier_object")
+        @Config("skip_glacier_objects")
         @ConfigDefault("false")
-        public boolean getSkipGlacierObject();
+        public boolean getSkipGlacierObjects();
 
         // TODO timeout, ssl, etc
 
@@ -211,7 +211,7 @@ public abstract class AbstractS3FileInputPlugin
 
             FileList.Builder builder = new FileList.Builder(task);
             listS3FilesByPrefix(builder, client, bucketName,
-                    task.getPathPrefix(), task.getLastPath(), task.getSkipGlacierObject());
+                    task.getPathPrefix(), task.getLastPath(), task.getSkipGlacierObjects());
             return builder.build();
         }
         catch (AmazonServiceException ex) {
@@ -234,7 +234,7 @@ public abstract class AbstractS3FileInputPlugin
      */
     public static void listS3FilesByPrefix(FileList.Builder builder,
             AmazonS3 client, String bucketName,
-            String prefix, Optional<String> lastPath, boolean skipGlacierObject)
+            String prefix, Optional<String> lastPath, boolean skipGlacierObjects)
     {
         String lastKey = lastPath.orNull();
         do {
@@ -242,11 +242,11 @@ public abstract class AbstractS3FileInputPlugin
             ObjectListing ol = client.listObjects(req);
             for (S3ObjectSummary s : ol.getObjectSummaries()) {
                 if (s.getStorageClass().equals(StorageClass.Glacier.toString())) {
-                    if (skipGlacierObject) {
+                    if (skipGlacierObjects) {
                         Exec.getLogger("AbstractS3FileInputPlugin.class").warn("Skipped \"s3://{}/{}\" that stored at Glacier.", bucketName, s.getKey());
                         continue;
                     } else {
-                        throw new ConfigException("Detected an object stored at Glacier. Set \"skip_glacier_object\" option to \"true\" to skip this.");
+                        throw new ConfigException("Detected an object stored at Glacier. Set \"skip_glacier_objects\" option to \"true\" to skip this.");
                     }
                 }
                 if (s.getSize() > 0) {
