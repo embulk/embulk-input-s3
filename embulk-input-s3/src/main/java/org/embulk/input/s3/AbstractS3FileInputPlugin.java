@@ -11,6 +11,7 @@ import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.amazonaws.services.s3.model.StorageClass;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
@@ -73,6 +74,10 @@ public abstract class AbstractS3FileInputPlugin
         @Config("incremental")
         @ConfigDefault("true")
         public boolean getIncremental();
+
+        @Config("skip_glacier_objects")
+        @ConfigDefault("false")
+        public boolean getSkipGlacierObjects();
 
         // TODO timeout, ssl, etc
 
@@ -206,7 +211,7 @@ public abstract class AbstractS3FileInputPlugin
 
             FileList.Builder builder = new FileList.Builder(task);
             listS3FilesByPrefix(builder, client, bucketName,
-                    task.getPathPrefix(), task.getLastPath());
+                    task.getPathPrefix(), task.getLastPath(), task.getSkipGlacierObjects());
             return builder.build();
         }
         catch (AmazonServiceException ex) {
@@ -229,13 +234,21 @@ public abstract class AbstractS3FileInputPlugin
      */
     public static void listS3FilesByPrefix(FileList.Builder builder,
             AmazonS3 client, String bucketName,
-            String prefix, Optional<String> lastPath)
+            String prefix, Optional<String> lastPath, boolean skipGlacierObjects)
     {
         String lastKey = lastPath.orNull();
         do {
             ListObjectsRequest req = new ListObjectsRequest(bucketName, prefix, lastKey, null, 1024);
             ObjectListing ol = client.listObjects(req);
             for (S3ObjectSummary s : ol.getObjectSummaries()) {
+                if (s.getStorageClass().equals(StorageClass.Glacier.toString())) {
+                    if (skipGlacierObjects) {
+                        Exec.getLogger("AbstractS3FileInputPlugin.class").warn("Skipped \"s3://{}/{}\" that stored at Glacier.", bucketName, s.getKey());
+                        continue;
+                    } else {
+                        throw new ConfigException("Detected an object stored at Glacier. Set \"skip_glacier_objects\" option to \"true\" to skip this.");
+                    }
+                }
                 if (s.getSize() > 0) {
                     builder.add(s.getKey(), s.getSize());
                     if (!builder.needsMore()) {

@@ -78,6 +78,8 @@
 
 * **incremental**: enables incremental loading. If incremental loading is enabled, config diff for the next execution will include `last_path` parameter so that next execution skips files before the path. Otherwise, `last_path` will not be included.
 
+* **skip_glacier_objects**: if true, skip processing objects stored in Amazon Glacier (boolean, default false)
+
 ## Example
 
 ```yaml

@@ -1,11 +1,17 @@
 package org.embulk.input.s3;
 
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.amazonaws.services.s3.model.StorageClass;
+import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.Region;
+import com.amazonaws.services.s3.model.ListObjectsRequest;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.embulk.EmbulkTestRuntime;
 import org.embulk.config.ConfigDiff;
+import org.embulk.config.ConfigException;
 import org.embulk.config.ConfigSource;
 import org.embulk.config.TaskReport;
 import org.embulk.config.TaskSource;
@@ -20,7 +26,9 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.Mockito;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,6 +37,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assume.assumeNotNull;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 
 public class TestS3FileInputPlugin
 {
@@ -150,7 +161,6 @@ public class TestS3FileInputPlugin
         }
     }
 
-
     @Test
     public void configuredEndpoint()
     {
@@ -193,6 +203,44 @@ public class TestS3FileInputPlugin
         // the S3 client should not eagerly resolves for a specific region on client side.
         // Please refer to org.embulk.input.s3.S3FileInputPlugin#newS3Client for the details.
         assertEquals(s3Client.getRegion(), Region.US_Standard);
+    }
+  
+    @Test(expected = ConfigException.class)
+    public void useSkipGlacierObjects() throws Exception
+    {
+        AmazonS3 client;
+        client = mock(AmazonS3.class);
+        doReturn(s3objectList("in/aa/a", StorageClass.Glacier)).when(client).listObjects(any(ListObjectsRequest.class));
+
+        AbstractS3FileInputPlugin plugin = Mockito.mock(AbstractS3FileInputPlugin.class, Mockito.CALLS_REAL_METHODS);
+        plugin.listS3FilesByPrefix(newFileList(config, "sample_00", 100L), client, "test_bucket", "test_prefix", Optional.<String>absent(), false);
+    }
+
+    private FileList.Builder newFileList(ConfigSource config, Object... nameAndSize)
+    {
+        FileList.Builder builder = new FileList.Builder(config);
+        for (int i = 0; i < nameAndSize.length; i += 2) {
+            builder.add((String) nameAndSize[i], (long) nameAndSize[i + 1]);
+        }
+        return builder;
+    }
+
+    private ObjectListing s3objectList(String key, StorageClass storageClass) throws Exception
+    {
+        ObjectListing list = new ObjectListing();
+
+        S3ObjectSummary element = new S3ObjectSummary();
+        element.setKey(key);
+        element.setStorageClass(storageClass.toString());
+
+        List<S3ObjectSummary> objectSummaries = new ArrayList<>();
+        objectSummaries.add(element);
+
+        Field field = list.getClass().getDeclaredField("objectSummaries");
+        field.setAccessible(true);
+        field.set(list, objectSummaries);
+
+        return list;
     }
 
     static class Control
