@@ -1,11 +1,11 @@
 package org.embulk.input.s3;
 
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
-import com.amazonaws.services.s3.model.StorageClass;
+import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.Region;
-import com.amazonaws.services.s3.model.ListObjectsRequest;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.amazonaws.services.s3.model.StorageClass;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -204,7 +204,7 @@ public class TestS3FileInputPlugin
         // Please refer to org.embulk.input.s3.S3FileInputPlugin#newS3Client for the details.
         assertEquals(s3Client.getRegion(), Region.US_Standard);
     }
-  
+
     @Test(expected = ConfigException.class)
     public void useSkipGlacierObjects() throws Exception
     {

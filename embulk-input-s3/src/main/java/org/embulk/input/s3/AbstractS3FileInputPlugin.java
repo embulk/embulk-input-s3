@@ -245,7 +245,8 @@ public abstract class AbstractS3FileInputPlugin
                     if (skipGlacierObjects) {
                         Exec.getLogger("AbstractS3FileInputPlugin.class").warn("Skipped \"s3://{}/{}\" that stored at Glacier.", bucketName, s.getKey());
                         continue;
-                    } else {
+                    }
+                    else {
                         throw new ConfigException("Detected an object stored at Glacier. Set \"skip_glacier_objects\" option to \"true\" to skip this.");
                     }
                 }
