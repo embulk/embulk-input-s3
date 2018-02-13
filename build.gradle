@@ -95,26 +95,24 @@ subprojects {
         }
     }
 
-    if (![project(":embulk-input-riak_cs")].contains(project)) {
-        // publishing
-        publishing {
-            publications {
-                 mavenJava(MavenPublication) {
-                     from components.java
-                     artifact testsJar
-                     artifact sourcesJar
-                     artifact javadocJar
-                     pom.withXml {
-                         asNode().dependencies.dependency.findAll() {
-                             it.scope.text() == 'runtime' && project.configurations.compile.allDependencies.find { dep ->
-                                 dep.name == it.artifactId.text()
-                             }
-                         }.each() {
-                             it.scope*.value = 'compile'
+    // publishing
+    publishing {
+        publications {
+             mavenJava(MavenPublication) {
+                 from components.java
+                 artifact testsJar
+                 artifact sourcesJar
+                 artifact javadocJar
+                 pom.withXml {
+                     asNode().dependencies.dependency.findAll() {
+                         it.scope.text() == 'runtime' && project.configurations.compile.allDependencies.find { dep ->
+                             dep.name == it.artifactId.text()
                          }
+                     }.each() {
+                         it.scope*.value = 'compile'
                      }
                  }
-            }
+             }
         }
     }
     // add tests/javadoc/source jar tasks as artifacts to be released
