@@ -256,7 +256,7 @@ public abstract class AbstractS3FileInputPlugin
                 if (s.getSize() > 0) {
                     builder.add(s.getKey(), s.getSize());
                     if (!builder.needsMore()) {
-                        LOGGER.info("Too many files matched, stop listing file");
+                        LOGGER.warn("Too many files matched, stop listing file");
                         return;
                     }
                 }
