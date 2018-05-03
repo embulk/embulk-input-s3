@@ -47,7 +47,7 @@ import static org.embulk.spi.util.RetryExecutor.retryExecutor;
 public abstract class AbstractS3FileInputPlugin
         implements FileInputPlugin
 {
-    private final Logger log = Exec.getLogger(S3FileInputPlugin.class);
+    private static final Logger LOGGER = Exec.getLogger(S3FileInputPlugin.class);
 
     public interface PluginTask
             extends AwsCredentialsTask, FileList.Task, Task
@@ -119,9 +119,10 @@ public abstract class AbstractS3FileInputPlugin
 
         // last_path
         if (task.getIncremental()) {
-            configDiff.set("last_path", task.getFiles().getLastPath(task.getLastPath()));
+            Optional<String> lastPath = task.getFiles().getLastPath(task.getLastPath());
+            LOGGER.info("Incremental job, setting last_path to [{}]", lastPath.orNull());
+            configDiff.set("last_path", lastPath);
         }
-
         return configDiff;
     }
 
@@ -201,17 +202,19 @@ public abstract class AbstractS3FileInputPlugin
 
     private FileList listFiles(PluginTask task)
     {
+        LOGGER.info("Start listing file with prefix [{}]", task.getPathPrefix());
         try {
             AmazonS3 client = newS3Client(task);
             String bucketName = task.getBucket();
 
             if (task.getPathPrefix().equals("/")) {
-                log.info("Listing files with prefix \"/\". This doesn't mean all files in a bucket. If you intend to read all files, use \"path_prefix: ''\" (empty string) instead.");
+                LOGGER.info("Listing files with prefix \"/\". This doesn't mean all files in a bucket. If you intend to read all files, use \"path_prefix: ''\" (empty string) instead.");
             }
 
             FileList.Builder builder = new FileList.Builder(task);
             listS3FilesByPrefix(builder, client, bucketName,
                     task.getPathPrefix(), task.getLastPath(), task.getSkipGlacierObjects());
+            LOGGER.info("Found total [{}] files", builder.size());
             return builder.build();
         }
         catch (AmazonServiceException ex) {
@@ -253,6 +256,7 @@ public abstract class AbstractS3FileInputPlugin
                 if (s.getSize() > 0) {
                     builder.add(s.getKey(), s.getSize());
                     if (!builder.needsMore()) {
+                        LOGGER.warn("Too many files matched, stop listing file");
                         return;
                     }
                 }
@@ -326,6 +330,7 @@ public abstract class AbstractS3FileInputPlugin
                         public void onGiveup(Exception firstException, Exception lastException)
                                 throws RetryGiveupException
                         {
+                            log.error("Giving up retry, first exception is [{}], last exception is [{}]", firstException.getMessage(), lastException.getMessage());
                         }
                     });
             }
@@ -384,9 +389,12 @@ public abstract class AbstractS3FileInputPlugin
             if (!iterator.hasNext()) {
                 return null;
             }
-            GetObjectRequest request = new GetObjectRequest(bucket, iterator.next());
+            String key = iterator.next();
+            GetObjectRequest request = new GetObjectRequest(bucket, key);
             S3Object obj = client.getObject(request);
-            return new ResumableInputStream(obj.getObjectContent(), new S3InputStreamReopener(client, request, obj.getObjectMetadata().getContentLength()));
+            long objectSize = obj.getObjectMetadata().getContentLength();
+            LOGGER.info("Open S3Object with bucket [{}], key [{}], with size [{}]", bucket, key, objectSize);
+            return new ResumableInputStream(obj.getObjectContent(), new S3InputStreamReopener(client, request, objectSize));
         }
 
         @Override
