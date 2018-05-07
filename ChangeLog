@@ -1,3 +1,7 @@
+Release 0.2.15 - 2018-05-07
+* Add more log info statement to indicate s3 progress
+[#68]
+
 Release 0.2.14 - 2018-02-02
 * Add skip_glacier_object option to avoid loading an object stored at glacier
 [#58] Thanks! @ujun
