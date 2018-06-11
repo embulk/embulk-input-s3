@@ -1,3 +1,6 @@
+Release 0.2.16 - 2018-06-10
+* Add retry logic to Riak CS (S3) during list operation
+
 Release 0.2.15 - 2018-05-07
 * Add more log info statement to indicate s3 progress
 [#68]

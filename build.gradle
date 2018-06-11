@@ -8,7 +8,7 @@ import com.github.jrubygradle.JRubyExec
 
 allprojects {
     group = 'org.embulk.input.s3'
-    version = '0.2.15'
+    version = '0.2.16'
 
     apply plugin: 'com.jfrog.bintray'
     apply plugin: 'maven-publish'
