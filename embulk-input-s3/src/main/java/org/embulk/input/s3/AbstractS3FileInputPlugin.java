@@ -69,6 +69,7 @@ public abstract class AbstractS3FileInputPlugin
         @Config("http_proxy")
         @ConfigDefault("null")
         public Optional<HttpProxy> getHttpProxy();
+
         public void setHttpProxy(Optional<HttpProxy> httpProxy);
 
         @Config("incremental")
@@ -82,6 +83,7 @@ public abstract class AbstractS3FileInputPlugin
         // TODO timeout, ssl, etc
 
         public FileList getFiles();
+
         public void setFiles(FileList files);
 
         @ConfigInject
@@ -104,8 +106,8 @@ public abstract class AbstractS3FileInputPlugin
 
     @Override
     public ConfigDiff resume(TaskSource taskSource,
-            int taskCount,
-            FileInputPlugin.Control control)
+                             int taskCount,
+                             FileInputPlugin.Control control)
     {
         PluginTask task = taskSource.loadTask(getTaskClass());
 
@@ -128,8 +130,8 @@ public abstract class AbstractS3FileInputPlugin
 
     @Override
     public void cleanup(TaskSource taskSource,
-            int taskCount,
-            List<TaskReport> successTaskReports)
+                        int taskCount,
+                        List<TaskReport> successTaskReports)
     {
         // do nothing
     }
@@ -139,13 +141,19 @@ public abstract class AbstractS3FileInputPlugin
      * Since this returns an immutable object, it is not for any further customizations by mutating,
      * e.g., {@link AmazonS3#setEndpoint} will throw a runtime {@link UnsupportedOperationException}
      * Subclass's customization should be done through {@link AbstractS3FileInputPlugin#defaultS3ClientBuilder}.
+     * @param task Embulk plugin task
+     * @return AmazonS3
      */
     protected AmazonS3 newS3Client(PluginTask task)
     {
         return defaultS3ClientBuilder(task).build();
     }
 
-    /** A base builder for the subclasses to then customize. */
+    /**
+     * A base builder for the subclasses to then customize.builder
+     * @param task Embulk plugin
+     * @return AmazonS3 client b
+     **/
     protected AmazonS3ClientBuilder defaultS3ClientBuilder(PluginTask task)
     {
         return AmazonS3ClientBuilder
@@ -228,21 +236,45 @@ public abstract class AbstractS3FileInputPlugin
             }
             throw ex;
         }
+        catch (InterruptedException | RetryGiveupException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     /**
      * Lists S3 filenames filtered by prefix.
-     *
+     * <p>
      * The resulting list does not include the file that's size == 0.
+     * @param builder custom Filelist builder
+     * @param client Amazon S3
+     * @param bucketName Amazon S3 bucket name
+     * @param prefix Amazon S3 bucket name prefix
+     * @param lastPath last path
+     * @param skipGlacierObjects skip gracier objects
+     * @throws RetryGiveupException error when retrying
+     * @throws InterruptedException error when retrying
      */
     public static void listS3FilesByPrefix(FileList.Builder builder,
-            AmazonS3 client, String bucketName,
-            String prefix, Optional<String> lastPath, boolean skipGlacierObjects)
+                                           final AmazonS3 client, final String bucketName,
+                                           final String prefix, Optional<String> lastPath, boolean skipGlacierObjects) throws RetryGiveupException, InterruptedException
     {
         String lastKey = lastPath.orNull();
         do {
-            ListObjectsRequest req = new ListObjectsRequest(bucketName, prefix, lastKey, null, 1024);
-            ObjectListing ol = client.listObjects(req);
+            final String finalLastKey = lastKey;
+            Optional<ObjectListing> optOl = S3FileInputUtils.executeWithRetry(3, 500, 30 * 1000, new S3FileInputUtils.AlwaysRetryRetryable<Optional<ObjectListing>>()
+            {
+                @Override
+                public Optional<ObjectListing> call() throws AmazonServiceException
+                {
+                    ListObjectsRequest req = new ListObjectsRequest(bucketName, prefix, finalLastKey, null, 1024);
+                    ObjectListing ol = client.listObjects(req);
+                    return Optional.of(ol);
+                }
+            });
+            if (!optOl.isPresent()) {
+                break;
+            }
+            ObjectListing ol = optOl.get();
             for (S3ObjectSummary s : ol.getObjectSummaries()) {
                 if (s.getStorageClass().equals(StorageClass.Glacier.toString())) {
                     if (skipGlacierObjects) {
@@ -262,7 +294,7 @@ public abstract class AbstractS3FileInputPlugin
                 }
             }
             lastKey = ol.getNextMarker();
-        } while(lastKey != null);
+        } while (lastKey != null);
     }
 
     @Override
@@ -294,45 +326,46 @@ public abstract class AbstractS3FileInputPlugin
         {
             try {
                 return retryExecutor()
-                    .withRetryLimit(3)
-                    .withInitialRetryWait(500)
-                    .withMaxRetryWait(30 * 1000)
-                    .runInterruptible(new Retryable<InputStream>() {
-                        @Override
-                        public InputStream call() throws InterruptedIOException
+                        .withRetryLimit(3)
+                        .withInitialRetryWait(500)
+                        .withMaxRetryWait(30 * 1000)
+                        .runInterruptible(new Retryable<InputStream>()
                         {
-                            log.warn(String.format("S3 read failed. Retrying GET request with %,d bytes offset", offset), closedCause);
-                            request.setRange(offset, contentLength - 1);  // [first, last]
-                            return client.getObject(request).getObjectContent();
-                        }
-
-                        @Override
-                        public boolean isRetryableException(Exception exception)
-                        {
-                            return true;  // TODO
-                        }
-
-                        @Override
-                        public void onRetry(Exception exception, int retryCount, int retryLimit, int retryWait)
-                                throws RetryGiveupException
-                        {
-                            String message = String.format("S3 GET request failed. Retrying %d/%d after %d seconds. Message: %s",
-                                    retryCount, retryLimit, retryWait / 1000, exception.getMessage());
-                            if (retryCount % 3 == 0) {
-                                log.warn(message, exception);
+                            @Override
+                            public InputStream call() throws InterruptedIOException
+                            {
+                                log.warn(String.format("S3 read failed. Retrying GET request with %,d bytes offset", offset), closedCause);
+                                request.setRange(offset, contentLength - 1);  // [first, last]
+                                return client.getObject(request).getObjectContent();
                             }
-                            else {
-                                log.warn(message);
-                            }
-                        }
 
-                        @Override
-                        public void onGiveup(Exception firstException, Exception lastException)
-                                throws RetryGiveupException
-                        {
-                            log.error("Giving up retry, first exception is [{}], last exception is [{}]", firstException.getMessage(), lastException.getMessage());
-                        }
-                    });
+                            @Override
+                            public boolean isRetryableException(Exception exception)
+                            {
+                                return true;  // TODO
+                            }
+
+                            @Override
+                            public void onRetry(Exception exception, int retryCount, int retryLimit, int retryWait)
+                                    throws RetryGiveupException
+                            {
+                                String message = String.format("S3 GET request failed. Retrying %d/%d after %d seconds. Message: %s",
+                                        retryCount, retryLimit, retryWait / 1000, exception.getMessage());
+                                if (retryCount % 3 == 0) {
+                                    log.warn(message, exception);
+                                }
+                                else {
+                                    log.warn(message);
+                                }
+                            }
+
+                            @Override
+                            public void onGiveup(Exception firstException, Exception lastException)
+                                    throws RetryGiveupException
+                            {
+                                log.error("Giving up retry, first exception is [{}], last exception is [{}]", firstException.getMessage(), lastException.getMessage());
+                            }
+                        });
             }
             catch (RetryGiveupException ex) {
                 Throwables.propagateIfInstanceOf(ex.getCause(), IOException.class);
