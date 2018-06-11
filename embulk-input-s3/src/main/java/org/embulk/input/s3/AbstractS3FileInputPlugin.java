@@ -173,7 +173,7 @@ public abstract class AbstractS3FileInputPlugin
 
         //clientConfig.setProtocol(Protocol.HTTP);
         clientConfig.setMaxConnections(50); // SDK default: 50
-        clientConfig.setMaxErrorRetry(3); // SDK deftaskault: 3
+        clientConfig.setMaxErrorRetry(3); // SDK default: 3
         clientConfig.setSocketTimeout(8 * 60 * 1000); // SDK default: 50*1000
 
         // set http proxy
@@ -237,7 +237,7 @@ public abstract class AbstractS3FileInputPlugin
             throw ex;
         }
         catch (InterruptedException | RetryGiveupException ex) {
-            throw new AmazonServiceException(ex.getMessage());
+            throw new RuntimeException(ex);
         }
     }
 
@@ -263,7 +263,6 @@ public abstract class AbstractS3FileInputPlugin
             final String finalLastKey = lastKey;
             Optional<ObjectListing> optOl = S3FileInputUtils.executeWithRetry(3, 500, 30 * 1000, new S3FileInputUtils.AlwaysRetryRetryable<Optional<ObjectListing>>()
             {
-
                 @Override
                 public Optional<ObjectListing> call() throws AmazonServiceException
                 {

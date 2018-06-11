@@ -5,7 +5,7 @@ import org.embulk.spi.util.RetryExecutor;
 import org.slf4j.Logger;
 
 /**
- * Utilit class for S3 File Input.
+ * Utility class for S3 File Input.
  */
 public final class S3FileInputUtils
 {
@@ -45,7 +45,7 @@ public final class S3FileInputUtils
         @Override
         public void onGiveup(Exception firstException, Exception lastException) throws RetryExecutor.RetryGiveupException
         {
-            LOGGER.info("Giving up execution on exception", lastException);
+            LOGGER.error("Giving up retry, first exception is [{}], last exception is [{}]", firstException.getMessage(), lastException.getMessage());
         }
     }
 }
