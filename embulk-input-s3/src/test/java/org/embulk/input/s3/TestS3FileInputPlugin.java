@@ -213,7 +213,7 @@ public class TestS3FileInputPlugin
         doReturn(s3objectList("in/aa/a", StorageClass.Glacier)).when(client).listObjects(any(ListObjectsRequest.class));
 
         AbstractS3FileInputPlugin plugin = Mockito.mock(AbstractS3FileInputPlugin.class, Mockito.CALLS_REAL_METHODS);
-        plugin.listS3FilesByPrefix(newFileList(config, "sample_00", 100L), client, "test_bucket", "test_prefix", Optional.<String>absent(), false);
+        plugin.listS3FilesByPrefix(newFileList(config, "sample_00", 100L), client, "test_bucket", "test_prefix", Optional.<String>absent(), false, 3, 500, 30000);
     }
 
     private FileList.Builder newFileList(ConfigSource config, Object... nameAndSize)
