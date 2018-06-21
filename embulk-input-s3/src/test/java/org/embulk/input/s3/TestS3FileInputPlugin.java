@@ -162,6 +162,17 @@ public class TestS3FileInputPlugin
     }
 
     @Test
+    public void useDirectPathPrefixObject()
+    {
+        ConfigSource config = this.config.deepCopy()
+                .set("direct_path_prefix_object", true)
+                .set("path_prefix", String.format("%s/sample_01.csv", EMBULK_S3_TEST_PATH_PREFIX));
+        ConfigDiff configDiff = runner.transaction(config, new Control(runner, output));
+        assertEquals(String.format("%s/sample_01.csv", EMBULK_S3_TEST_PATH_PREFIX), configDiff.get(String.class, "last_path"));
+        assertEquals(2, getRecords(config, output).size());
+    }
+
+    @Test
     public void configuredEndpoint()
     {
         S3PluginTask task = config.deepCopy()

@@ -6,9 +6,11 @@ import com.amazonaws.Protocol;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.GetObjectMetadataRequest;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.services.s3.model.StorageClass;
@@ -79,6 +81,16 @@ public abstract class AbstractS3FileInputPlugin
         @Config("skip_glacier_objects")
         @ConfigDefault("false")
         public boolean getSkipGlacierObjects();
+
+        /**
+         * When this is on, "path_prefix" config will be treated as a single object key,
+         *
+         * Since list-objects operation on S3 is eventually consistent, using this for a
+         * more reliable way to retrieve a single object when you know the exact object key.
+         */
+        @Config("direct_path_prefix_object")
+        @ConfigDefault("false")
+        public boolean getDirectPathPrefixObject();
 
         // TODO timeout, ssl, etc
 
@@ -220,8 +232,13 @@ public abstract class AbstractS3FileInputPlugin
             }
 
             FileList.Builder builder = new FileList.Builder(task);
-            listS3FilesByPrefix(builder, client, bucketName,
-                    task.getPathPrefix(), task.getLastPath(), task.getSkipGlacierObjects());
+            if (!task.getDirectPathPrefixObject()) {
+                listS3FilesByPrefix(builder, client, bucketName,
+                        task.getPathPrefix(), task.getLastPath(), task.getSkipGlacierObjects());
+            }
+            else {
+                addS3DirectObject(builder, client, task.getBucket(), task.getPathPrefix());
+            }
             LOGGER.info("Found total [{}] files", builder.size());
             return builder.build();
         }
@@ -239,6 +256,13 @@ public abstract class AbstractS3FileInputPlugin
         catch (InterruptedException | RetryGiveupException ex) {
             throw new RuntimeException(ex);
         }
+    }
+
+    private void addS3DirectObject(FileList.Builder builder, AmazonS3 client, String bucket, String objectKey)
+    {
+        GetObjectMetadataRequest objectMetadataRequest = new GetObjectMetadataRequest(bucket, objectKey);
+        ObjectMetadata objectMetadata = client.getObjectMetadata(objectMetadataRequest);
+        builder.add(objectKey, objectMetadata.getContentLength());
     }
 
     /**
