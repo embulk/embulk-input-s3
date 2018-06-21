@@ -284,7 +284,7 @@ public abstract class AbstractS3FileInputPlugin
     {
         final GetObjectMetadataRequest objectMetadataRequest = new GetObjectMetadataRequest(bucket, objectKey);
 
-        ObjectMetadata objectMetadata = new AlwaysRetryable<ObjectMetadata>("Getting an object data") {
+        ObjectMetadata objectMetadata = new AlwaysRetryable<ObjectMetadata>("Looking up for a single object") {
             @Override
             public ObjectMetadata call()
             {
