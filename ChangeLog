@@ -1,3 +1,6 @@
+Release 0.2.17 - 2018-06-21
+* Add `direct_path_prefix_object` to treat `path_prefix` as a single object key
+
 Release 0.2.16 - 2018-06-10
 * Add retry logic to Riak CS (S3) during list operation
 
