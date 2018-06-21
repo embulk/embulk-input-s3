@@ -12,6 +12,8 @@
 
 - **path_prefix** prefix of target keys (string, required)
 
+- **direct_path_prefix_object** flag to enable treating `path_prefix` as a single object key (boolean, default to `false`). Since list-objects operation on S3 is eventually consistent, using this for a  more reliable way to retrieve a single object when you know the exact object key.
+
 - **endpoint** S3 endpoint login user name (string, optional)
 
 - **region** S3 region. endpoint will be in effect if you specify both of endpoint and region (string, optional)

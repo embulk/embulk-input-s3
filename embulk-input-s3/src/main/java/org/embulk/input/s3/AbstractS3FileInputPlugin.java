@@ -82,6 +82,12 @@ public abstract class AbstractS3FileInputPlugin
         @ConfigDefault("false")
         public boolean getSkipGlacierObjects();
 
+        /**
+         * When this is on, "path_prefix" config will be treated as a single object key,
+         *
+         * Since list-objects operation on S3 is eventually consistent, using this for a
+         * more reliable way to retrieve a single object when you know the exact object key.
+         */
         @Config("direct_path_prefix_object")
         @ConfigDefault("false")
         public boolean getDirectPathPrefixObject();
