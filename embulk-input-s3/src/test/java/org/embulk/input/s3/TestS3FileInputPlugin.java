@@ -219,18 +219,12 @@ public class TestS3FileInputPlugin
     @Test(expected = ConfigException.class)
     public void useSkipGlacierObjects() throws Exception
     {
-        S3PluginTask task = config.deepCopy()
-                .set("test_bucket", "test_bucket")
-                .set("path_prefix", "test_prefix")
-                .set("skip_glacier_objects", false)
-                .set("last_path", Optional.<String>absent())
-                .loadConfig(S3PluginTask.class);
         AmazonS3 client;
         client = mock(AmazonS3.class);
         doReturn(s3objectList("in/aa/a", StorageClass.Glacier)).when(client).listObjects(any(ListObjectsRequest.class));
 
         AbstractS3FileInputPlugin plugin = Mockito.mock(AbstractS3FileInputPlugin.class, Mockito.CALLS_REAL_METHODS);
-        plugin.listS3FilesByPrefix(newFileList(config, "sample_00", 100L), client, task);
+        plugin.listS3FilesByPrefix(newFileList(config, "sample_00", 100L), client, "test_bucket", "test_prefix", Optional.<String>absent(), false);
     }
 
     private FileList.Builder newFileList(ConfigSource config, Object... nameAndSize)

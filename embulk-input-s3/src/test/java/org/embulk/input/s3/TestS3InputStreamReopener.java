@@ -6,7 +6,6 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import org.embulk.EmbulkTestRuntime;
-import org.embulk.config.ConfigSource;
 import org.embulk.input.s3.AbstractS3FileInputPlugin.S3InputStreamReopener;
 import org.junit.Before;
 import org.junit.Rule;
@@ -17,12 +16,12 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
+import static org.embulk.spi.util.RetryExecutor.retryExecutor;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.embulk.input.s3.S3FileInputPlugin.S3PluginTask;
 
 public class TestS3InputStreamReopener
 {
@@ -31,18 +30,10 @@ public class TestS3InputStreamReopener
 
     private AmazonS3 client;
 
-    private S3PluginTask task;
-
     @Before
     public void createResources()
     {
         client = mock(AmazonS3.class);
-        ConfigSource config = runtime.getExec().newConfigSource()
-                .set("type", "s3")
-                .set("bucket", "test_bucket")
-                .set("path_prefix", "test_prefix");
-        task = config.deepCopy()
-                .loadConfig(S3PluginTask.class);
     }
 
     @Test
@@ -54,7 +45,7 @@ public class TestS3InputStreamReopener
         { // not retry
             doReturn(s3object("in/aa/a", content)).when(client).getObject(any(GetObjectRequest.class));
 
-            S3InputStreamReopener opener = new S3InputStreamReopener(client, new GetObjectRequest("my_bucket", "in/aa/a"), content.length(), task);
+            S3InputStreamReopener opener = new S3InputStreamReopener(client, new GetObjectRequest("my_bucket", "in/aa/a"), content.length());
 
             try (InputStream in = opener.reopen(0, new RuntimeException())) {
                 BufferedReader r = new BufferedReader(new InputStreamReader(in));
@@ -65,7 +56,13 @@ public class TestS3InputStreamReopener
         { // retry once
             doThrow(new RuntimeException()).doReturn(s3object("in/aa/a", content)).when(client).getObject(any(GetObjectRequest.class));
 
-            S3InputStreamReopener opener = new S3InputStreamReopener(client, new GetObjectRequest("my_bucket", "in/aa/a"), content.length(), task);
+            S3InputStreamReopener opener = new S3InputStreamReopener(
+                    client,
+                    new GetObjectRequest("my_bucket", "in/aa/a"),
+                    content.length(),
+                    retryExecutor()
+                            .withInitialRetryWait(0)
+                            .withRetryLimit(1));
 
             try (InputStream in = opener.reopen(0, new RuntimeException())) {
                 BufferedReader r = new BufferedReader(new InputStreamReader(in));
