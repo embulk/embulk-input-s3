@@ -221,7 +221,7 @@ public abstract class AbstractS3FileInputPlugin
     /**
      * Build the common retry executor from some configuration params of plugin task.
      * @param task Plugin task.
-     + @return RetryExecutor object
+     * @return RetryExecutor object
      */
     private static RetryExecutor retryExecutorFrom(RetrySupportPluginTask task)
     {
