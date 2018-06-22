@@ -13,7 +13,7 @@ import static org.embulk.spi.util.RetryExecutor.Retryable;
  * Always retry, regardless the occurred exceptions,
  * Also provide a default approach for exception propagation.
  */
-public abstract class AlwaysRetryable<T> implements Retryable<T>
+abstract class AlwaysRetryable<T> implements Retryable<T>
 {
     private static final Logger log = Exec.getLogger(AlwaysRetryable.class);
 
