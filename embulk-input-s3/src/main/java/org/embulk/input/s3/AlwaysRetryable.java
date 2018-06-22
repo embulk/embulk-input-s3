@@ -49,7 +49,8 @@ public abstract class AlwaysRetryable<T> implements Retryable<T>
     @Override
     public void onGiveup(Exception firstException, Exception lastException)
     {
-        log.error("Giving up on retrying for {}, first exception is [{}], last exception is [{}]",
+        // Exceptions would be propagated, so it's up to the caller to handle, this is just warning
+        log.warn("Giving up on retrying for {}, first exception is [{}], last exception is [{}]",
                 operationName, firstException.getMessage(), lastException.getMessage());
     }
 
@@ -86,8 +87,8 @@ public abstract class AlwaysRetryable<T> implements Retryable<T>
     /**
      * Run itself by the supplied executor,
      *
-     * This propagates all exceptions (as unchecked), `propagateAsIsException` will be re-throw as-is whether it is
-     * an unchecked or checked exception. Also, if RetryGiveException is thrown, it will be unwrap.
+     * This propagates all exceptions (as unchecked), while `propagateAsIsException` will be re-throw as-is whether
+     * it is an unchecked or checked exception. Also, if RetryGiveException is thrown, it will be unwrap.
      * For convenient, it execute normally without retrying when executor is null.
      *
      * @throws X whatever checked exception that you decided to propagate directly
