@@ -62,12 +62,7 @@ public class AbstractS3FileInputPluginTest
     {
         doReturn(new ObjectListing()).when(client).listObjects(any(ListObjectsRequest.class));
         FileList.Builder builder = new FileList.Builder();
-        dummyS3Plugin().listS3FilesByPrefix(
-                builder,
-                client,
-                "some_bucket",
-                "some_prefix",
-                Optional.of("last_path"), true);
+        dummyS3Plugin().listS3FilesByPrefix(builder, client, "some_bucket", "some_prefix", Optional.of("last_path"), true);
     }
 
     @Test
@@ -77,12 +72,7 @@ public class AbstractS3FileInputPluginTest
                 .when(client).listObjects(any(ListObjectsRequest.class));
         FileList.Builder builder = new FileList.Builder();
         dummyS3Plugin().listS3FilesByPrefix(
-                builder,
-                client,
-                "some_bucket",
-                "some_prefix",
-                Optional.of("last_path"),
-                true,
+                builder, client, "some_bucket", "some_prefix", Optional.of("last_path"), true,
                 retryExecutor().withRetryLimit(1));
     }
 
@@ -93,12 +83,7 @@ public class AbstractS3FileInputPluginTest
                 .when(client).listObjects(any(ListObjectsRequest.class));
         FileList.Builder builder = new FileList.Builder();
         dummyS3Plugin().listS3FilesByPrefix(
-                builder,
-                client,
-                "some_bucket",
-                "some_prefix",
-                Optional.of("last_path"),
-                true,
+                builder, client, "some_bucket", "some_prefix", Optional.of("last_path"), true,
                 retryExecutor().withRetryLimit(0));
     }
 
@@ -107,11 +92,7 @@ public class AbstractS3FileInputPluginTest
     {
         doReturn(new ObjectMetadata()).when(client).getObjectMetadata(any(GetObjectMetadataRequest.class));
         FileList.Builder builder = new FileList.Builder().pathMatchPattern("");
-        dummyS3Plugin().addS3DirectObject(
-                builder,
-                client,
-                "some_bucket",
-                "some_prefix");
+        dummyS3Plugin().addS3DirectObject(builder, client, "some_bucket", "some_prefix");
     }
 
     @Test
@@ -121,10 +102,7 @@ public class AbstractS3FileInputPluginTest
                 .when(client).getObjectMetadata(any(GetObjectMetadataRequest.class));
         FileList.Builder builder = new FileList.Builder().pathMatchPattern("");
         dummyS3Plugin().addS3DirectObject(
-                builder,
-                client,
-                "some_bucket",
-                "some_prefix",
+                builder, client, "some_bucket", "some_prefix",
                 retryExecutor());
     }
 
@@ -135,10 +113,7 @@ public class AbstractS3FileInputPluginTest
                 .when(client).getObjectMetadata(any(GetObjectMetadataRequest.class));
         FileList.Builder builder = new FileList.Builder().pathMatchPattern("");
         dummyS3Plugin().addS3DirectObject(
-                builder,
-                client,
-                "some_bucket",
-                "some_prefix",
+                builder, client, "some_bucket", "some_prefix",
                 retryExecutor().withRetryLimit(0));
     }
 }
