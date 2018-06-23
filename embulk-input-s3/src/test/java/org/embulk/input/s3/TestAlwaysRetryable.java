@@ -1,9 +1,7 @@
 package org.embulk.input.s3;
 
-import org.embulk.EmbulkTestRuntime;
 import org.embulk.spi.util.RetryExecutor;
 import org.embulk.spi.util.RetryExecutor.RetryGiveupException;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -61,9 +59,6 @@ public class TestAlwaysRetryable
                 .withInitialRetryWait(0)
                 .withMaxRetryWait(0);
     }
-
-    @Rule
-    public EmbulkTestRuntime runtime = new EmbulkTestRuntime();  // require for AlwaysRetryable's logger
 
     @Test
     public void guarantee_retry_attempts_just_like_Retryable() throws Exception

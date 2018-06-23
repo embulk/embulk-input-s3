@@ -11,7 +11,6 @@ import org.embulk.input.s3.AbstractS3FileInputPlugin.S3InputStreamReopener;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -72,8 +71,6 @@ public class TestS3InputStreamReopener
             }
         }
     }
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     @Test(expected = AmazonClientException.class)
     public void reopenS3FileByReopener_on_retry_gave_up_should_throw_original_exception() throws Exception
