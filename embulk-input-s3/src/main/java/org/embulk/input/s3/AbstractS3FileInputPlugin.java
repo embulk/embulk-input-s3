@@ -268,7 +268,8 @@ public abstract class AbstractS3FileInputPlugin
         }
     }
 
-    private void addS3DirectObject(FileList.Builder builder,
+    @VisibleForTesting
+    public void addS3DirectObject(FileList.Builder builder,
                                    final AmazonS3 client,
                                    String bucket,
                                    String objectKey)
@@ -276,7 +277,8 @@ public abstract class AbstractS3FileInputPlugin
         addS3DirectObject(builder, client, bucket, objectKey, null);
     }
 
-    private void addS3DirectObject(FileList.Builder builder,
+    @VisibleForTesting
+    public void addS3DirectObject(FileList.Builder builder,
                                    final AmazonS3 client,
                                    String bucket,
                                    String objectKey,
@@ -295,6 +297,7 @@ public abstract class AbstractS3FileInputPlugin
         builder.add(objectKey, objectMetadata.getContentLength());
     }
 
+    @VisibleForTesting
     public static void listS3FilesByPrefix(FileList.Builder builder,
                                            final AmazonS3 client,
                                            String bucketName,
@@ -316,6 +319,7 @@ public abstract class AbstractS3FileInputPlugin
      * @param lastPath last path
      * @param skipGlacierObjects skip gracier objects
      */
+    @VisibleForTesting
     public static void listS3FilesByPrefix(FileList.Builder builder,
                                            final AmazonS3 client,
                                            String bucketName,

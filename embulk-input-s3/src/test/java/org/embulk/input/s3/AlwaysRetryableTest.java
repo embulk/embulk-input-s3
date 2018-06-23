@@ -14,6 +14,54 @@ import static org.msgpack.core.Preconditions.checkArgument;
 
 public class AlwaysRetryableTest
 {
+    private static class Deny extends RuntimeException implements Callable
+    {
+        private int pastCalls = 0;
+        private final int targetCalls;
+        private Exception exception;
+
+        Deny(int targetCalls)
+        {
+            super(format("Try harder! (Will pass after %d calls)", targetCalls));
+            checkArgument(targetCalls >= 0);
+            this.targetCalls = targetCalls;
+        }
+
+        static Deny until(int calls)
+        {
+            return new Deny(calls);
+        }
+
+        Deny with(Exception exception)
+        {
+            this.exception = exception;
+            return this;
+        }
+
+        @Override
+        public Object call() throws Exception
+        {
+            if (pastCalls < targetCalls) {
+                pastCalls++;
+                if (exception != null) {
+                    throw exception;
+                }
+                else {
+                    throw this;
+                }
+            }
+            pastCalls++;
+            return null;
+        }
+    }
+
+    private static RetryExecutor retryExecutor()
+    {
+        return RetryExecutor.retryExecutor()
+                .withInitialRetryWait(0)
+                .withMaxRetryWait(0);
+    }
+
     @Rule
     public EmbulkTestRuntime runtime = new EmbulkTestRuntime();  // require for AlwaysRetryable's logger
 
@@ -75,53 +123,5 @@ public class AlwaysRetryableTest
     public void execute_without_an_implementation_should_throw_an_IllegalStateException()
     {
         new AlwaysRetryable().executeWith(retryExecutor());
-    }
-
-    private static RetryExecutor retryExecutor()
-    {
-        return RetryExecutor.retryExecutor()
-                .withInitialRetryWait(0)
-                .withMaxRetryWait(0);
-    }
-
-    static class Deny extends RuntimeException implements Callable
-    {
-        private int pastCalls = 0;
-        private final int targetCalls;
-        private Exception exception;
-
-        Deny(int targetCalls)
-        {
-            super(format("Try harder! (Will pass after %d calls)", targetCalls));
-            checkArgument(targetCalls >= 0);
-            this.targetCalls = targetCalls;
-        }
-
-        static Deny until(int calls)
-        {
-            return new Deny(calls);
-        }
-
-        Deny with(Exception exception)
-        {
-            this.exception = exception;
-            return this;
-        }
-
-        @Override
-        public Object call() throws Exception
-        {
-            if (pastCalls < targetCalls) {
-                pastCalls++;
-                if (exception != null) {
-                    throw exception;
-                }
-                else {
-                    throw this;
-                }
-            }
-            pastCalls++;
-            return null;
-        }
     }
 }

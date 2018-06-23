@@ -1,5 +1,6 @@
 package org.embulk.input.s3;
 
+import com.amazonaws.AmazonClientException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
@@ -10,6 +11,7 @@ import org.embulk.input.s3.AbstractS3FileInputPlugin.S3InputStreamReopener;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -69,6 +71,25 @@ public class TestS3InputStreamReopener
                 assertEquals("value", r.readLine());
             }
         }
+    }
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+
+    @Test(expected = AmazonClientException.class)
+    public void reopenS3FileByReopener_on_retry_gave_up_should_throw_original_exception() throws Exception
+    {
+        String content = "value";
+        doThrow(new AmazonClientException("no")).doReturn(s3object("in/aa/a", content)).when(client).getObject(any(GetObjectRequest.class));
+
+        S3InputStreamReopener opener = new S3InputStreamReopener(
+                client,
+                new GetObjectRequest("my_bucket", "in/aa/a"),
+                content.length(),
+                retryExecutor()
+                        .withInitialRetryWait(0)
+                        .withRetryLimit(0));
+
+        opener.reopen(0, new RuntimeException());
     }
 
     static S3Object s3object(String key, String value)
