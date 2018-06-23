@@ -12,7 +12,7 @@ import java.util.concurrent.Callable;
 import static java.lang.String.format;
 import static org.msgpack.core.Preconditions.checkArgument;
 
-public class AlwaysRetryableTest
+public class TestAlwaysRetryable
 {
     private static class Deny extends RuntimeException implements Callable
     {

@@ -18,7 +18,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 
-public class AbstractS3FileInputPluginTest
+public class TestAbstractS3FileInputPlugin
 {
     private static RetryExecutor retryExecutor()
     {
