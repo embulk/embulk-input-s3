@@ -1,7 +1,9 @@
 package org.embulk.input.s3;
 
+import org.embulk.EmbulkTestRuntime;
 import org.embulk.spi.util.RetryExecutor;
 import org.embulk.spi.util.RetryExecutor.RetryGiveupException;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -12,6 +14,9 @@ import static org.msgpack.core.Preconditions.checkArgument;
 
 public class TestAlwaysRetryable
 {
+    @Rule
+    public EmbulkTestRuntime runtime = new EmbulkTestRuntime();  // require for AlwaysRetryable's logger
+
     private static class Deny extends RuntimeException implements Callable
     {
         private int pastCalls = 0;
@@ -61,6 +66,7 @@ public class TestAlwaysRetryable
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void guarantee_retry_attempts_just_like_Retryable() throws Exception
     {
         retryExecutor()
@@ -78,6 +84,7 @@ public class TestAlwaysRetryable
     }
 
     @Test(expected = RetryGiveupException.class)
+    @SuppressWarnings("unchecked")
     public void fail_after_exceeding_attempts_just_like_Retryable() throws Exception
     {
         retryExecutor()
@@ -86,6 +93,7 @@ public class TestAlwaysRetryable
     }
 
     @Test(expected = Deny.class)
+    @SuppressWarnings("unchecked")
     public void execute_should_unwrap_RetryGiveupException() throws Exception
     {
         new AlwaysRetryable(Deny.until(4))
@@ -93,6 +101,7 @@ public class TestAlwaysRetryable
     }
 
     @Test(expected = RuntimeException.class)
+    @SuppressWarnings("unchecked")
     public void execute_should_unwrap_RetryGiveupException_but_rewrap_checked_exception_in_a_RuntimeException()
     {
         new AlwaysRetryable(Deny.until(4).with(new Exception("A checked exception")))
