@@ -5,6 +5,8 @@ import org.embulk.spi.Exec;
 import org.embulk.spi.util.RetryExecutor;
 import org.slf4j.Logger;
 
+import java.util.concurrent.Callable;
+
 import static java.lang.String.format;
 import static org.embulk.spi.util.RetryExecutor.RetryGiveupException;
 import static org.embulk.spi.util.RetryExecutor.Retryable;
@@ -13,11 +15,12 @@ import static org.embulk.spi.util.RetryExecutor.Retryable;
  * Always retry, regardless the occurred exceptions,
  * Also provide a default approach for exception propagation.
  */
-abstract class AlwaysRetryable<T> implements Retryable<T>
+class AlwaysRetryable<T> implements Retryable<T>
 {
     private static final Logger log = Exec.getLogger(AlwaysRetryable.class);
 
     private String operationName;
+    private Callable<T> callable;
 
     /**
      * @param operationName the name that will be referred on logging
@@ -25,6 +28,37 @@ abstract class AlwaysRetryable<T> implements Retryable<T>
     public AlwaysRetryable(String operationName)
     {
         this.operationName = operationName;
+    }
+
+    /**
+     * @param operationName the name that will be referred on logging
+     * @param callable the operation, either define this at construction time or override the call() method
+     */
+    public AlwaysRetryable(String operationName, Callable<T> callable)
+    {
+        this.operationName = operationName;
+        this.callable = callable;
+    }
+
+    public AlwaysRetryable()
+    {
+        this("Anonymous operation");
+    }
+
+    public AlwaysRetryable(Callable<T> callable)
+    {
+        this("Anonymous operation", callable);
+    }
+
+    @Override
+    public T call() throws Exception
+    {
+        if (callable != null) {
+            return callable.call();
+        }
+        else {
+            throw new IllegalStateException("Either override call() or construct with a Runnable");
+        }
     }
 
     @Override
@@ -57,10 +91,13 @@ abstract class AlwaysRetryable<T> implements Retryable<T>
     /**
      * Run itself by the supplied executor,
      *
-     * This propagates all exceptions (as unchecked) and unwrap RetryGiveupException for the original cause,
+     * This propagates all exceptions (as unchecked) and unwrap RetryGiveupException for the original cause.
+     * If the original exception already is a RuntimeException, it will be propagated as is. If not, it will
+     * be wrapped around with a RuntimeException.
+     *
      * For convenient, it execute normally without retrying when executor is null.
      *
-     * @throws RuntimeException wrap around whatever the original cause of failure (potentially thread interruption)
+     * @throws RuntimeException the original cause
      */
     public T executeWith(RetryExecutor executor)
     {
@@ -87,15 +124,16 @@ abstract class AlwaysRetryable<T> implements Retryable<T>
     /**
      * Run itself by the supplied executor,
      *
-     * This propagates all exceptions (as unchecked), while `propagateAsIsException` will be re-throw as-is whether
-     * it is an unchecked or checked exception. Also, if RetryGiveException is thrown, it will be unwrap.
+     * Same as `executeWith`, this propagates all original exceptions. But `propagateAsIsException` will
+     * be re-throw without being wrapped on a RuntimeException, whether it is a checked or unchecked exception.
+     *
      * For convenient, it execute normally without retrying when executor is null.
      *
      * @throws X whatever checked exception that you decided to propagate directly
      * @throws RuntimeException wrap around whatever the original cause of failure (potentially thread interruption)
      */
-    public <X extends Throwable> T executeAndPropagateAsIs(RetryExecutor executor,
-                                                           Class<X> propagateAsIsException) throws X
+    public <X extends Throwable> T executeWithCheckedException(RetryExecutor executor,
+                                                               Class<X> propagateAsIsException) throws X
     {
         if (executor == null) {
             try {

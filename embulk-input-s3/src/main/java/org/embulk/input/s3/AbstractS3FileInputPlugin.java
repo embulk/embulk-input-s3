@@ -400,7 +400,7 @@ public abstract class AbstractS3FileInputPlugin
                 {
                     return client.getObject(request).getObjectContent();
                 }
-            }.executeAndPropagateAsIs(retryExec, IOException.class);
+            }.executeWithCheckedException(retryExec, IOException.class);
         }
     }
 
