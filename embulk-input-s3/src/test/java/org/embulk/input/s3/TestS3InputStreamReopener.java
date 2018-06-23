@@ -19,6 +19,7 @@ import java.io.InputStreamReader;
 
 import static org.embulk.spi.util.RetryExecutor.retryExecutor;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -87,6 +88,28 @@ public class TestS3InputStreamReopener
                         .withRetryLimit(0));
 
         opener.reopen(0, new RuntimeException());
+    }
+
+    @Test(expected = AmazonClientException.class)
+    public void reopenS3FileByReopener_on_retry_always_throw_exception()
+            throws Exception
+    {
+        { // always failed call with 2 retries
+            S3Object s3Object = mock(S3Object.class);
+            doReturn(s3Object).when(client).getObject(any(GetObjectRequest.class));
+            doThrow(new AmazonClientException("This exception is thrown when retrying.")).when(s3Object).getObjectContent();
+            S3InputStreamReopener opener = new S3InputStreamReopener(
+                    client,
+                    new GetObjectRequest("my_bucket", "in/aa/a"),
+                    "value".length(),
+                    retryExecutor()
+                            .withInitialRetryWait(0)
+                            .withRetryLimit(2));
+
+            try (InputStream in = opener.reopen(0, new AmazonClientException("This exception can be ignored"))) {
+                fail("Should throw exception.");
+            }
+        }
     }
 
     static S3Object s3object(String key, String value)
