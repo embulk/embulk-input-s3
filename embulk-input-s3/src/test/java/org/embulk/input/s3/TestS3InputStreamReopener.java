@@ -94,22 +94,20 @@ public class TestS3InputStreamReopener
     public void reopenS3FileByReopener_on_retry_always_throw_exception()
             throws Exception
     {
-        { // always failed call with 2 retries
-            S3Object s3Object = mock(S3Object.class);
-            doReturn(s3Object).when(client).getObject(any(GetObjectRequest.class));
-            doThrow(new AmazonClientException("This exception is thrown when retrying.")).when(s3Object).getObjectContent();
-            S3InputStreamReopener opener = new S3InputStreamReopener(
-                    client,
-                    new GetObjectRequest("my_bucket", "in/aa/a"),
-                    "value".length(),
-                    retryExecutor()
-                            .withInitialRetryWait(0)
-                            .withRetryLimit(2));
+        // always failed call with 2 retries
+        doThrow(new AmazonClientException("This exception is thrown when retrying.")).when(client).getObject(any(GetObjectRequest.class));;
+        S3InputStreamReopener opener = new S3InputStreamReopener(
+                client,
+                new GetObjectRequest("my_bucket", "in/aa/a"),
+                "value".length(),
+                retryExecutor()
+                        .withInitialRetryWait(0)
+                        .withRetryLimit(2));
 
-            try (InputStream in = opener.reopen(0, new AmazonClientException("This exception can be ignored"))) {
-                fail("Should throw exception.");
-            }
+        try (InputStream in = opener.reopen(0, new AmazonClientException("This exception can be ignored"))) {
+            fail("Should throw exception.");
         }
+
     }
 
     static S3Object s3object(String key, String value)
