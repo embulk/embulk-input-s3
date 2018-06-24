@@ -11,7 +11,6 @@ import org.embulk.spi.util.RetryExecutor;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doReturn;
@@ -45,9 +44,6 @@ public class TestAbstractS3FileInputPlugin
 
     @Rule
     public EmbulkTestRuntime runtime = new EmbulkTestRuntime();
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     private AmazonS3 client;
 
