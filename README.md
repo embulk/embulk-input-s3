@@ -13,7 +13,7 @@
 - **path_prefix** prefix of target keys (string, optional)
 
 - **path** the direct path to target key (string, optional)
-  - **Note:** Either **path** or *path_prefix** must exist, both is able to exist at the same time and **path** will be chosen in case it's happen
+  - **Note:** Either **path** or *path_prefix** must exist, both is able to exist at the same time and **path** will be chosen in case it happens
 
 - **endpoint** S3 endpoint login user name (string, optional)
 
