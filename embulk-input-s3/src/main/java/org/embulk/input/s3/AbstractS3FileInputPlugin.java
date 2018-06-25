@@ -56,7 +56,12 @@ public abstract class AbstractS3FileInputPlugin
         public String getBucket();
 
         @Config("path_prefix")
-        public String getPathPrefix();
+        @ConfigDefault("null")
+        public Optional<String> getPathPrefix();
+
+        @Config("path")
+        @ConfigDefault("null")
+        public Optional<String> getPath();
 
         @Config("last_path")
         @ConfigDefault("null")
@@ -80,16 +85,6 @@ public abstract class AbstractS3FileInputPlugin
         @ConfigDefault("false")
         public boolean getSkipGlacierObjects();
 
-        /**
-         * When this is on, "path_prefix" config will be treated as a single object key,
-         *
-         * Since list-objects operation on S3 is eventually consistent, using this for a
-         * more reliable way to retrieve a single object when you know the exact object key.
-         */
-        @Config("direct_path_prefix_object")
-        @ConfigDefault("false")
-        public boolean getDirectPathPrefixObject();
-
         // TODO timeout, ssl, etc
 
         public FileList getFiles();
@@ -107,6 +102,7 @@ public abstract class AbstractS3FileInputPlugin
     {
         PluginTask task = config.loadConfig(getTaskClass());
 
+        validateInputTask(task);
         // list files recursively
         task.setFiles(listFiles(task));
 
@@ -233,26 +229,27 @@ public abstract class AbstractS3FileInputPlugin
 
     private FileList listFiles(final PluginTask task)
     {
-        LOGGER.info("Start listing file with prefix [{}]", task.getPathPrefix());
         try {
             AmazonS3 client = newS3Client(task);
             String bucketName = task.getBucket();
-
-            if (task.getPathPrefix().equals("/")) {
-                LOGGER.info("Listing files with prefix \"/\". This doesn't mean all files in a bucket. If you intend to read all files, use \"path_prefix: ''\" (empty string) instead.");
-            }
-
             FileList.Builder builder = new FileList.Builder(task);
             RetryExecutor retryExec = retryExecutorFrom(task);
-
-            if (!task.getDirectPathPrefixObject()) {
-                listS3FilesByPrefix(builder, client, bucketName,
-                        task.getPathPrefix(), task.getLastPath(), task.getSkipGlacierObjects(), retryExec);
+            if (task.getPath().isPresent()) {
+                LOGGER.info("Start getting object with path: [{}]", task.getPath().get());
+                addS3DirectObject(builder, client, task.getBucket(), task.getPath().get(), retryExec);
             }
             else {
-                addS3DirectObject(builder, client, task.getBucket(), task.getPathPrefix(), retryExec);
+                // does not need to verify existent path prefix here since there is the validation requires either path or path_prefix
+                LOGGER.info("Start listing file with prefix [{}]", task.getPathPrefix().get());
+                if (task.getPathPrefix().get().equals("/")) {
+                    LOGGER.info("Listing files with prefix \"/\". This doesn't mean all files in a bucket. If you intend to read all files, use \"path_prefix: ''\" (empty string) instead.");
+                }
+
+                listS3FilesByPrefix(builder, client, bucketName,
+                        task.getPathPrefix().get(), task.getLastPath(), task.getSkipGlacierObjects(), retryExec);
+                LOGGER.info("Found total [{}] files", builder.size());
             }
-            LOGGER.info("Found total [{}] files", builder.size());
+
             return builder.build();
         }
         catch (AmazonServiceException ex) {
@@ -270,9 +267,9 @@ public abstract class AbstractS3FileInputPlugin
 
     @VisibleForTesting
     public void addS3DirectObject(FileList.Builder builder,
-                                   final AmazonS3 client,
-                                   String bucket,
-                                   String objectKey)
+                                  final AmazonS3 client,
+                                  String bucket,
+                                  String objectKey)
     {
         addS3DirectObject(builder, client, bucket, objectKey, null);
     }
@@ -297,6 +294,13 @@ public abstract class AbstractS3FileInputPlugin
         builder.add(objectKey, objectMetadata.getContentLength());
     }
 
+    private void validateInputTask(PluginTask task)
+    {
+        if (!task.getPathPrefix().isPresent() && !task.getPath().isPresent()) {
+            throw new ConfigException("Either path or path_prefix is required");
+        }
+    }
+
     @VisibleForTesting
     public static void listS3FilesByPrefix(FileList.Builder builder,
                                            final AmazonS3 client,
@@ -318,6 +322,7 @@ public abstract class AbstractS3FileInputPlugin
      * @param prefix Amazon S3 bucket name prefix
      * @param lastPath last path
      * @param skipGlacierObjects skip gracier objects
+     * @param retryExec a retry executor object to do the retrying
      */
     @VisibleForTesting
     public static void listS3FilesByPrefix(FileList.Builder builder,

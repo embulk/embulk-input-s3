@@ -95,7 +95,7 @@ public class TestS3InputStreamReopener
             throws Exception
     {
         // always failed call with 2 retries
-        doThrow(new AmazonClientException("This exception is thrown when retrying.")).when(client).getObject(any(GetObjectRequest.class));;
+        doThrow(new AmazonClientException("This exception is thrown when retrying.")).when(client).getObject(any(GetObjectRequest.class));
         S3InputStreamReopener opener = new S3InputStreamReopener(
                 client,
                 new GetObjectRequest("my_bucket", "in/aa/a"),
@@ -107,7 +107,6 @@ public class TestS3InputStreamReopener
         try (InputStream in = opener.reopen(0, new AmazonClientException("This exception can be ignored"))) {
             fail("Should throw exception.");
         }
-
     }
 
     static S3Object s3object(String key, String value)
