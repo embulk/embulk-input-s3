@@ -162,14 +162,25 @@ public class TestS3FileInputPlugin
     }
 
     @Test
-    public void useDirectPathPrefixObject()
+    public void usePath()
     {
         ConfigSource config = this.config.deepCopy()
-                .set("direct_path_prefix_object", true)
-                .set("path_prefix", String.format("%s/sample_01.csv", EMBULK_S3_TEST_PATH_PREFIX));
+                .set("path", String.format("%s/sample_01.csv", EMBULK_S3_TEST_PATH_PREFIX))
+                .set("path_prefix", null);
         ConfigDiff configDiff = runner.transaction(config, new Control(runner, output));
         assertEquals(String.format("%s/sample_01.csv", EMBULK_S3_TEST_PATH_PREFIX), configDiff.get(String.class, "last_path"));
-        assertEquals(2, getRecords(config, output).size());
+        assertRecords(config, output);
+    }
+
+    @Test
+    public void usePathAsHighPriorityThanPathPrefix()
+    {
+        ConfigSource config = this.config.deepCopy()
+                .set("path", String.format("%s/sample_01.csv", EMBULK_S3_TEST_PATH_PREFIX))
+                .set("path_prefix", "foo"); // path_prefix has the bad value, if path_prefix is chosen, expected result will be failed
+        ConfigDiff configDiff = runner.transaction(config, new Control(runner, output));
+        assertEquals(String.format("%s/sample_01.csv", EMBULK_S3_TEST_PATH_PREFIX), configDiff.get(String.class, "last_path"));
+        assertRecords(config, output);
     }
 
     @Test
