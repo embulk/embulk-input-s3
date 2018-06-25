@@ -256,7 +256,8 @@ public abstract class AbstractS3FileInputPlugin
         }
     }
 
-    private void addS3DirectObject(final FileList.Builder builder, final AmazonS3 client, final String bucket, final String objectKey) throws RetryGiveupException, InterruptedException {
+    @VisibleForTesting
+    public void addS3DirectObject(final FileList.Builder builder, final AmazonS3 client, final String bucket, final String objectKey) throws RetryGiveupException, InterruptedException {
         // TODO: basic retry solution, should be updated once PR: https://github.com/embulk/embulk-input-s3/pull/72 get merged
         ObjectMetadata objectMetadata = S3FileInputUtils.executeWithRetry(5, 1000, 30 * 1000, new S3FileInputUtils.AlwaysRetryRetryable<ObjectMetadata>()
         {
