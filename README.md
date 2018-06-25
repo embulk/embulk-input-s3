@@ -10,9 +10,10 @@
 
 - **bucket** S3 bucket name (string, required)
 
-- **path_prefix** prefix of target keys (string, required)
+- **path_prefix** prefix of target keys (string, optional)
 
-- **direct_path_prefix_object** flag to enable treating `path_prefix` as a single object key (boolean, default to `false`). Since list-objects operation on S3 is eventually consistent, using this for a  more reliable way to retrieve a single object when you know the exact object key.
+- **path** the direct path to target key (string, optional)
+  - **Note:** Either **path** or *path_prefix** must exist, both is able to exist at the same time and **path** will be chosen in case it's happen
 
 - **endpoint** S3 endpoint login user name (string, optional)
 
