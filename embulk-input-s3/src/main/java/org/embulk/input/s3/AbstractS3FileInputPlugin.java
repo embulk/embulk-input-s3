@@ -12,11 +12,11 @@ import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.services.s3.model.StorageClass;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
 import org.embulk.config.Config;
 import org.embulk.config.ConfigDefault;
 import org.embulk.config.ConfigDiff;
@@ -32,15 +32,13 @@ import org.embulk.spi.FileInputPlugin;
 import org.embulk.spi.TransactionalFileInput;
 import org.embulk.spi.util.InputStreamFileInput;
 import org.embulk.spi.util.ResumableInputStream;
-import org.embulk.spi.util.RetryExecutor.RetryGiveupException;
-import org.embulk.spi.util.RetryExecutor.Retryable;
+import org.embulk.spi.util.RetryExecutor;
 import org.embulk.util.aws.credentials.AwsCredentials;
 import org.embulk.util.aws.credentials.AwsCredentialsTask;
 import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InterruptedIOException;
 import java.util.Iterator;
 import java.util.List;
 
@@ -52,7 +50,7 @@ public abstract class AbstractS3FileInputPlugin
     private static final Logger LOGGER = Exec.getLogger(S3FileInputPlugin.class);
 
     public interface PluginTask
-            extends AwsCredentialsTask, FileList.Task, Task
+            extends AwsCredentialsTask, FileList.Task, RetrySupportPluginTask, Task
     {
         @Config("bucket")
         public String getBucket();
@@ -216,17 +214,31 @@ public abstract class AbstractS3FileInputPlugin
         }
     }
 
-    private FileList listFiles(PluginTask task)
+    /**
+     * Build the common retry executor from some configuration params of plugin task.
+     * @param task Plugin task.
+     * @return RetryExecutor object
+     */
+    private static RetryExecutor retryExecutorFrom(RetrySupportPluginTask task)
+    {
+        return retryExecutor()
+            .withRetryLimit(task.getMaximumRetries())
+            .withInitialRetryWait(task.getInitialRetryIntervalMillis())
+            .withMaxRetryWait(task.getMaximumRetryIntervalMillis());
+    }
+
+    private FileList listFiles(final PluginTask task)
     {
         try {
             AmazonS3 client = newS3Client(task);
             String bucketName = task.getBucket();
             FileList.Builder builder = new FileList.Builder(task);
-
+            RetryExecutor retryExec = retryExecutorFrom(task);
             if (task.getPath().isPresent()) {
                 LOGGER.info("Start getting object with path: [{}]", task.getPath().get());
-                addS3DirectObject(builder, client, task.getBucket(), task.getPath().get());
-            } else {
+                addS3DirectObject(builder, client, task.getBucket(), task.getPath().get(), retryExec);
+            }
+            else {
                 // does not need to verify existent path prefix here since there is the validation requires either path or path_prefix
                 LOGGER.info("Start listing file with prefix [{}]", task.getPathPrefix().get());
                 if (task.getPathPrefix().get().equals("/")) {
@@ -234,7 +246,7 @@ public abstract class AbstractS3FileInputPlugin
                 }
 
                 listS3FilesByPrefix(builder, client, bucketName,
-                        task.getPathPrefix().get(), task.getLastPath(), task.getSkipGlacierObjects());
+                        task.getPathPrefix().get(), task.getLastPath(), task.getSkipGlacierObjects(), retryExec);
                 LOGGER.info("Found total [{}] files", builder.size());
             }
 
@@ -251,31 +263,53 @@ public abstract class AbstractS3FileInputPlugin
             }
             throw ex;
         }
-        catch (InterruptedException | RetryGiveupException ex) {
-            throw new RuntimeException(ex);
-        }
     }
 
     @VisibleForTesting
-    public void addS3DirectObject(final FileList.Builder builder, final AmazonS3 client, final String bucket, final String objectKey) throws RetryGiveupException, InterruptedException {
-        // TODO: basic retry solution, should be updated once PR: https://github.com/embulk/embulk-input-s3/pull/72 get merged
-        ObjectMetadata objectMetadata = S3FileInputUtils.executeWithRetry(5, 1000, 30 * 1000, new S3FileInputUtils.AlwaysRetryRetryable<ObjectMetadata>()
-        {
+    public void addS3DirectObject(FileList.Builder builder,
+                                  final AmazonS3 client,
+                                  String bucket,
+                                  String objectKey)
+    {
+        addS3DirectObject(builder, client, bucket, objectKey, null);
+    }
+
+    @VisibleForTesting
+    public void addS3DirectObject(FileList.Builder builder,
+                                   final AmazonS3 client,
+                                   String bucket,
+                                   String objectKey,
+                                   RetryExecutor retryExec)
+    {
+        final GetObjectMetadataRequest objectMetadataRequest = new GetObjectMetadataRequest(bucket, objectKey);
+
+        ObjectMetadata objectMetadata = new AlwaysRetryable<ObjectMetadata>("Looking up for a single object") {
             @Override
-            public ObjectMetadata call() throws AmazonServiceException
+            public ObjectMetadata call()
             {
-                GetObjectMetadataRequest objectMetadataRequest = new GetObjectMetadataRequest(bucket, objectKey);
                 return client.getObjectMetadata(objectMetadataRequest);
             }
-        });
+        }.executeWith(retryExec);
 
         builder.add(objectKey, objectMetadata.getContentLength());
     }
 
-    private void validateInputTask(PluginTask task) {
+    private void validateInputTask(PluginTask task)
+    {
         if (!task.getPathPrefix().isPresent() && !task.getPath().isPresent()) {
             throw new ConfigException("Either path or path_prefix is required");
         }
+    }
+
+    @VisibleForTesting
+    public static void listS3FilesByPrefix(FileList.Builder builder,
+                                           final AmazonS3 client,
+                                           String bucketName,
+                                           String prefix,
+                                           Optional<String> lastPath,
+                                           boolean skipGlacierObjects)
+    {
+        listS3FilesByPrefix(builder, client, bucketName, prefix, lastPath, skipGlacierObjects, null);
     }
 
     /**
@@ -288,30 +322,28 @@ public abstract class AbstractS3FileInputPlugin
      * @param prefix Amazon S3 bucket name prefix
      * @param lastPath last path
      * @param skipGlacierObjects skip gracier objects
-     * @throws RetryGiveupException error when retrying
-     * @throws InterruptedException error when retrying
+     * @param retryExec a retry executor object to do the retrying
      */
+    @VisibleForTesting
     public static void listS3FilesByPrefix(FileList.Builder builder,
-                                           final AmazonS3 client, final String bucketName,
-                                           final String prefix, Optional<String> lastPath, boolean skipGlacierObjects) throws RetryGiveupException, InterruptedException
+                                           final AmazonS3 client,
+                                           String bucketName,
+                                           String prefix,
+                                           Optional<String> lastPath,
+                                           boolean skipGlacierObjects,
+                                           RetryExecutor retryExec)
     {
         String lastKey = lastPath.orNull();
         do {
             final String finalLastKey = lastKey;
-            Optional<ObjectListing> optOl = S3FileInputUtils.executeWithRetry(3, 500, 30 * 1000, new S3FileInputUtils.AlwaysRetryRetryable<Optional<ObjectListing>>()
-            {
+            final ListObjectsRequest req = new ListObjectsRequest(bucketName, prefix, finalLastKey, null, 1024);
+            ObjectListing ol = new AlwaysRetryable<ObjectListing>("Listing objects") {
                 @Override
-                public Optional<ObjectListing> call() throws AmazonServiceException
+                public ObjectListing call()
                 {
-                    ListObjectsRequest req = new ListObjectsRequest(bucketName, prefix, finalLastKey, null, 1024);
-                    ObjectListing ol = client.listObjects(req);
-                    return Optional.of(ol);
+                    return client.listObjects(req);
                 }
-            });
-            if (!optOl.isPresent()) {
-                break;
-            }
-            ObjectListing ol = optOl.get();
+            }.executeWith(retryExec);
             for (S3ObjectSummary s : ol.getObjectSummaries()) {
                 if (s.getStorageClass().equals(StorageClass.Glacier.toString())) {
                     if (skipGlacierObjects) {
@@ -350,67 +382,34 @@ public abstract class AbstractS3FileInputPlugin
         private final AmazonS3 client;
         private final GetObjectRequest request;
         private final long contentLength;
+        private final RetryExecutor retryExec;
 
         public S3InputStreamReopener(AmazonS3 client, GetObjectRequest request, long contentLength)
+        {
+            this(client, request, contentLength, null);
+        }
+
+        public S3InputStreamReopener(AmazonS3 client, GetObjectRequest request, long contentLength, RetryExecutor retryExec)
         {
             this.client = client;
             this.request = request;
             this.contentLength = contentLength;
+            this.retryExec = retryExec;
         }
 
         @Override
         public InputStream reopen(final long offset, final Exception closedCause) throws IOException
         {
-            try {
-                return retryExecutor()
-                        .withRetryLimit(3)
-                        .withInitialRetryWait(500)
-                        .withMaxRetryWait(30 * 1000)
-                        .runInterruptible(new Retryable<InputStream>()
-                        {
-                            @Override
-                            public InputStream call() throws InterruptedIOException
-                            {
-                                log.warn(String.format("S3 read failed. Retrying GET request with %,d bytes offset", offset), closedCause);
-                                request.setRange(offset, contentLength - 1);  // [first, last]
-                                return client.getObject(request).getObjectContent();
-                            }
+            log.warn(String.format("S3 read failed. Retrying GET request with %,d bytes offset", offset), closedCause);
+            request.setRange(offset, contentLength - 1);  // [first, last]
 
-                            @Override
-                            public boolean isRetryableException(Exception exception)
-                            {
-                                return true;  // TODO
-                            }
-
-                            @Override
-                            public void onRetry(Exception exception, int retryCount, int retryLimit, int retryWait)
-                                    throws RetryGiveupException
-                            {
-                                String message = String.format("S3 GET request failed. Retrying %d/%d after %d seconds. Message: %s",
-                                        retryCount, retryLimit, retryWait / 1000, exception.getMessage());
-                                if (retryCount % 3 == 0) {
-                                    log.warn(message, exception);
-                                }
-                                else {
-                                    log.warn(message);
-                                }
-                            }
-
-                            @Override
-                            public void onGiveup(Exception firstException, Exception lastException)
-                                    throws RetryGiveupException
-                            {
-                                log.error("Giving up retry, first exception is [{}], last exception is [{}]", firstException.getMessage(), lastException.getMessage());
-                            }
-                        });
-            }
-            catch (RetryGiveupException ex) {
-                Throwables.propagateIfInstanceOf(ex.getCause(), IOException.class);
-                throw Throwables.propagate(ex.getCause());
-            }
-            catch (InterruptedException ex) {
-                throw new InterruptedIOException();
-            }
+            return new AlwaysRetryable<S3ObjectInputStream>("Opening the file") {
+                @Override
+                public S3ObjectInputStream call()
+                {
+                    return client.getObject(request).getObjectContent();
+                }
+            }.executeWithCheckedException(retryExec, IOException.class);
         }
     }
 
@@ -445,12 +444,14 @@ public abstract class AbstractS3FileInputPlugin
         private AmazonS3 client;
         private final String bucket;
         private final Iterator<String> iterator;
+        private final RetryExecutor retryExec;
 
         public SingleFileProvider(PluginTask task, int taskIndex)
         {
             this.client = newS3Client(task);
             this.bucket = task.getBucket();
             this.iterator = task.getFiles().get(taskIndex).iterator();
+            this.retryExec = retryExecutorFrom(task);
         }
 
         @Override
@@ -464,7 +465,7 @@ public abstract class AbstractS3FileInputPlugin
             S3Object obj = client.getObject(request);
             long objectSize = obj.getObjectMetadata().getContentLength();
             LOGGER.info("Open S3Object with bucket [{}], key [{}], with size [{}]", bucket, key, objectSize);
-            return new ResumableInputStream(obj.getObjectContent(), new S3InputStreamReopener(client, request, objectSize));
+            return new ResumableInputStream(obj.getObjectContent(), new S3InputStreamReopener(client, request, objectSize, retryExec));
         }
 
         @Override
