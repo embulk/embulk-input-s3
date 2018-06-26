@@ -1,3 +1,9 @@
+Release 0.2.19 - 2018-06-26
+* Enhancement for retrying logic [#72]
+** Extract hard-coded values to configs (PluginTask)
+** Refactor to de-dup retry code
+** Increase default retry limit from 3 to 7
+
 Release 0.2.18 - 2018-06-25
 * Add `path` as a replacement of `direct_path_prefix_object` to directly read single object key
 
