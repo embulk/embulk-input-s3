@@ -1,10 +1,16 @@
 package org.embulk.input.s3;
 
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.SdkBaseException;
 import com.google.common.base.Throwables;
+import org.apache.http.HttpStatus;
 import org.embulk.spi.Exec;
 import org.embulk.spi.util.RetryExecutor;
 import org.slf4j.Logger;
 
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.Callable;
 
 import static java.lang.String.format;
@@ -18,9 +24,16 @@ import static org.embulk.spi.util.RetryExecutor.Retryable;
 class AlwaysRetryable<T> implements Retryable<T>
 {
     private static final Logger log = Exec.getLogger(AlwaysRetryable.class);
-
+    private static final Set<Integer> NONRETRYABLE_STATUS_CODES = new HashSet<Integer>(2);
+    private static final Set<String> NONRETRYABLE_ERROR_CODES = new HashSet<String>(1);
     private String operationName;
     private Callable<T> callable;
+
+    static {
+        NONRETRYABLE_STATUS_CODES.add(HttpStatus.SC_FORBIDDEN);
+        NONRETRYABLE_STATUS_CODES.add(HttpStatus.SC_METHOD_NOT_ALLOWED);
+        NONRETRYABLE_ERROR_CODES.add("ExpiredToken");
+    }
 
     /**
      * @param operationName the name that will be referred on logging
@@ -64,6 +77,17 @@ class AlwaysRetryable<T> implements Retryable<T>
     @Override
     public boolean isRetryableException(Exception exception)
     {
+        // Always retry on client exceptions caused by IOException
+        if (exception.getCause() instanceof IOException) {
+            return true;
+        }
+        // No retry on a subset of service exceptions
+        if (exception instanceof AmazonServiceException) {
+            AmazonServiceException ase = (AmazonServiceException) exception;
+            if (isNonRetryableServiceException(ase)) {
+                return false;
+            }
+        }
         return true;
     }
 
@@ -154,5 +178,30 @@ class AlwaysRetryable<T> implements Retryable<T>
         catch (InterruptedException e) {
             throw Throwables.propagate(e);
         }
+    }
+
+    private static boolean isAse(SdkBaseException e)
+    {
+        return e instanceof AmazonServiceException;
+    }
+
+    /**
+     * Returns true if the specified exception is a non-retryable service side exception.
+     *
+     * @param exception The exception to test.
+     * @return True if the exception resulted from a non-retryable service error, otherwise false.
+     */
+    public static boolean isNonRetryableServiceException(SdkBaseException exception)
+    {
+        if (!isAse(exception)) {
+            return true;
+        }
+        AmazonServiceException ase = toAse(exception);
+        return NONRETRYABLE_STATUS_CODES.contains(ase.getStatusCode()) || NONRETRYABLE_ERROR_CODES.contains(ase.getErrorCode());
+    }
+
+    private static AmazonServiceException toAse(SdkBaseException e)
+    {
+        return (AmazonServiceException) e;
     }
 }

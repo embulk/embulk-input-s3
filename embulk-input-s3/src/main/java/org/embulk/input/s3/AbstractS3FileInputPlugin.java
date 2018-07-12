@@ -4,6 +4,7 @@ import com.amazonaws.AmazonServiceException;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.Protocol;
 import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.retry.PredefinedRetryPolicies;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.GetObjectMetadataRequest;
@@ -177,11 +178,12 @@ public abstract class AbstractS3FileInputPlugin
     {
         ClientConfiguration clientConfig = new ClientConfiguration();
 
+        /** PLT-9886: disable built-in retry*/
         //clientConfig.setProtocol(Protocol.HTTP);
-        clientConfig.setMaxConnections(50); // SDK default: 50
-        clientConfig.setMaxErrorRetry(3); // SDK default: 3
-        clientConfig.setSocketTimeout(8 * 60 * 1000); // SDK default: 50*1000
-
+//        clientConfig.setMaxConnections(50); // SDK default: 50
+//        clientConfig.setMaxErrorRetry(3); // SDK default: 3
+//        clientConfig.setSocketTimeout(8 * 60 * 1000); // SDK default: 50*1000
+        clientConfig.withRetryPolicy(PredefinedRetryPolicies.NO_RETRY_POLICY);
         // set http proxy
         if (task.getHttpProxy().isPresent()) {
             setHttpProxyInAwsClient(clientConfig, task.getHttpProxy().get());
