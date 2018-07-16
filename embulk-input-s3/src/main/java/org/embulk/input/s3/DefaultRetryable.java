@@ -76,7 +76,12 @@ class DefaultRetryable<T> implements Retryable<T>
     @Override
     public boolean isRetryableException(Exception exception)
     {
-        return !isNonRetryableServiceException(exception);
+        // No retry on a subset of service exceptions
+        if (exception instanceof AmazonServiceException) {
+            AmazonServiceException ase = (AmazonServiceException) exception;
+            return !NONRETRYABLE_STATUS_CODES.contains(ase.getStatusCode()) && !NONRETRYABLE_ERROR_CODES.contains(ase.getErrorCode());
+        }
+        return true;
     }
 
     @Override
@@ -166,25 +171,5 @@ class DefaultRetryable<T> implements Retryable<T>
         catch (InterruptedException e) {
             throw Throwables.propagate(e);
         }
-    }
-
-    /**
-     * Returns true if the specified exception is a non-retryable service side exception.
-     *
-     * @param exception The exception to test.
-     * @return True if the exception resulted from a non-retryable service error, otherwise false.
-     */
-    public static boolean isNonRetryableServiceException(Exception exception)
-    {
-        // Always retry on client exceptions caused by IOException
-        if (exception.getCause() instanceof IOException) {
-            return false;
-        }
-        // No retry on a subset of service exceptions
-        if (exception instanceof AmazonServiceException) {
-            AmazonServiceException ase = (AmazonServiceException) exception;
-            return NONRETRYABLE_STATUS_CODES.contains(ase.getStatusCode()) || NONRETRYABLE_ERROR_CODES.contains(ase.getErrorCode());
-        }
-        return false;
     }
 }
