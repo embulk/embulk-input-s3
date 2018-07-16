@@ -1,7 +1,6 @@
 package org.embulk.input.s3;
 
 import com.amazonaws.AmazonServiceException;
-import com.amazonaws.SdkBaseException;
 import com.google.common.base.Throwables;
 import org.apache.http.HttpStatus;
 import org.embulk.spi.Exec;
@@ -18,12 +17,12 @@ import static org.embulk.spi.util.RetryExecutor.RetryGiveupException;
 import static org.embulk.spi.util.RetryExecutor.Retryable;
 
 /**
- * Always retry, regardless the occurred exceptions,
+ * Retryable utility, regardless the occurred exceptions,
  * Also provide a default approach for exception propagation.
  */
-class AlwaysRetryable<T> implements Retryable<T>
+class DefaultRetryable<T> implements Retryable<T>
 {
-    private static final Logger log = Exec.getLogger(AlwaysRetryable.class);
+    private static final Logger log = Exec.getLogger(DefaultRetryable.class);
     private static final Set<Integer> NONRETRYABLE_STATUS_CODES = new HashSet<Integer>(2);
     private static final Set<String> NONRETRYABLE_ERROR_CODES = new HashSet<String>(1);
     private String operationName;
@@ -38,7 +37,7 @@ class AlwaysRetryable<T> implements Retryable<T>
     /**
      * @param operationName the name that will be referred on logging
      */
-    public AlwaysRetryable(String operationName)
+    public DefaultRetryable(String operationName)
     {
         this.operationName = operationName;
     }
@@ -47,18 +46,18 @@ class AlwaysRetryable<T> implements Retryable<T>
      * @param operationName the name that will be referred on logging
      * @param callable the operation, either define this at construction time or override the call() method
      */
-    public AlwaysRetryable(String operationName, Callable<T> callable)
+    public DefaultRetryable(String operationName, Callable<T> callable)
     {
         this.operationName = operationName;
         this.callable = callable;
     }
 
-    public AlwaysRetryable()
+    public DefaultRetryable()
     {
         this("Anonymous operation");
     }
 
-    public AlwaysRetryable(Callable<T> callable)
+    public DefaultRetryable(Callable<T> callable)
     {
         this("Anonymous operation", callable);
     }
@@ -77,18 +76,7 @@ class AlwaysRetryable<T> implements Retryable<T>
     @Override
     public boolean isRetryableException(Exception exception)
     {
-        // Always retry on client exceptions caused by IOException
-        if (exception.getCause() instanceof IOException) {
-            return true;
-        }
-        // No retry on a subset of service exceptions
-        if (exception instanceof AmazonServiceException) {
-            AmazonServiceException ase = (AmazonServiceException) exception;
-            if (isNonRetryableServiceException(ase)) {
-                return false;
-            }
-        }
-        return true;
+        return !isNonRetryableServiceException(exception);
     }
 
     @Override
@@ -180,28 +168,23 @@ class AlwaysRetryable<T> implements Retryable<T>
         }
     }
 
-    private static boolean isAse(SdkBaseException e)
-    {
-        return e instanceof AmazonServiceException;
-    }
-
     /**
      * Returns true if the specified exception is a non-retryable service side exception.
      *
      * @param exception The exception to test.
      * @return True if the exception resulted from a non-retryable service error, otherwise false.
      */
-    public static boolean isNonRetryableServiceException(SdkBaseException exception)
+    public static boolean isNonRetryableServiceException(Exception exception)
     {
-        if (!isAse(exception)) {
-            return true;
+        // Always retry on client exceptions caused by IOException
+        if (exception.getCause() instanceof IOException) {
+            return false;
         }
-        AmazonServiceException ase = toAse(exception);
-        return NONRETRYABLE_STATUS_CODES.contains(ase.getStatusCode()) || NONRETRYABLE_ERROR_CODES.contains(ase.getErrorCode());
-    }
-
-    private static AmazonServiceException toAse(SdkBaseException e)
-    {
-        return (AmazonServiceException) e;
+        // No retry on a subset of service exceptions
+        if (exception instanceof AmazonServiceException) {
+            AmazonServiceException ase = (AmazonServiceException) exception;
+            return NONRETRYABLE_STATUS_CODES.contains(ase.getStatusCode()) || NONRETRYABLE_ERROR_CODES.contains(ase.getErrorCode());
+        }
+        return false;
     }
 }

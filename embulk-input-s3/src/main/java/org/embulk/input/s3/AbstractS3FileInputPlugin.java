@@ -285,7 +285,7 @@ public abstract class AbstractS3FileInputPlugin
     {
         final GetObjectMetadataRequest objectMetadataRequest = new GetObjectMetadataRequest(bucket, objectKey);
 
-        ObjectMetadata objectMetadata = new AlwaysRetryable<ObjectMetadata>("Looking up for a single object") {
+        ObjectMetadata objectMetadata = new DefaultRetryable<ObjectMetadata>("Looking up for a single object") {
             @Override
             public ObjectMetadata call()
             {
@@ -339,7 +339,7 @@ public abstract class AbstractS3FileInputPlugin
         do {
             final String finalLastKey = lastKey;
             final ListObjectsRequest req = new ListObjectsRequest(bucketName, prefix, finalLastKey, null, 1024);
-            ObjectListing ol = new AlwaysRetryable<ObjectListing>("Listing objects") {
+            ObjectListing ol = new DefaultRetryable<ObjectListing>("Listing objects") {
                 @Override
                 public ObjectListing call()
                 {
@@ -405,7 +405,7 @@ public abstract class AbstractS3FileInputPlugin
             log.warn(String.format("S3 read failed. Retrying GET request with %,d bytes offset", offset), closedCause);
             request.setRange(offset, contentLength - 1);  // [first, last]
 
-            return new AlwaysRetryable<S3ObjectInputStream>("Opening the file") {
+            return new DefaultRetryable<S3ObjectInputStream>("Opening the file") {
                 @Override
                 public S3ObjectInputStream call()
                 {

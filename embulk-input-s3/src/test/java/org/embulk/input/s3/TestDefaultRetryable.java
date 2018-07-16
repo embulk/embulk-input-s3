@@ -12,10 +12,10 @@ import java.util.concurrent.Callable;
 import static java.lang.String.format;
 import static org.msgpack.core.Preconditions.checkArgument;
 
-public class TestAlwaysRetryable
+public class TestDefaultRetryable
 {
     @Rule
-    public EmbulkTestRuntime runtime = new EmbulkTestRuntime();  // require for AlwaysRetryable's logger
+    public EmbulkTestRuntime runtime = new EmbulkTestRuntime();  // require for DefaultRetryable's logger
 
     private static class Deny extends RuntimeException implements Callable
     {
@@ -71,16 +71,16 @@ public class TestAlwaysRetryable
     {
         retryExecutor()
                 .withRetryLimit(0)
-                .run(new AlwaysRetryable(Deny.until(0)));
+                .run(new DefaultRetryable(Deny.until(0)));
         retryExecutor()
                 .withRetryLimit(1)
-                .run(new AlwaysRetryable(Deny.until(1)));
+                .run(new DefaultRetryable(Deny.until(1)));
         retryExecutor()
                 .withRetryLimit(2)
-                .run(new AlwaysRetryable(Deny.until(1)));
+                .run(new DefaultRetryable(Deny.until(1)));
         retryExecutor()
                 .withRetryLimit(3)
-                .run(new AlwaysRetryable(Deny.until(2)));
+                .run(new DefaultRetryable(Deny.until(2)));
     }
 
     @Test(expected = RetryGiveupException.class)
@@ -89,14 +89,14 @@ public class TestAlwaysRetryable
     {
         retryExecutor()
                 .withRetryLimit(3)
-                .run(new AlwaysRetryable(Deny.until(4)));
+                .run(new DefaultRetryable(Deny.until(4)));
     }
 
     @Test(expected = Deny.class)
     @SuppressWarnings("unchecked")
     public void execute_should_unwrap_RetryGiveupException() throws Exception
     {
-        new AlwaysRetryable(Deny.until(4))
+        new DefaultRetryable(Deny.until(4))
                 .executeWith(retryExecutor().withRetryLimit(3));
     }
 
@@ -104,7 +104,7 @@ public class TestAlwaysRetryable
     @SuppressWarnings("unchecked")
     public void execute_should_unwrap_RetryGiveupException_but_rewrap_checked_exception_in_a_RuntimeException()
     {
-        new AlwaysRetryable(Deny.until(4).with(new Exception("A checked exception")))
+        new DefaultRetryable(Deny.until(4).with(new Exception("A checked exception")))
                 .executeWith(retryExecutor().withRetryLimit(3));
     }
 
@@ -114,7 +114,7 @@ public class TestAlwaysRetryable
         RetryExecutor retryExc = retryExecutor().withRetryLimit(3);
         // An explicit type parameter for operation return type is needed here,
         // Without one, javac (at least on 1.8) will fails to infer the X exception type parameter.
-        new AlwaysRetryable<Object>() {
+        new DefaultRetryable<Object>() {
             @Override
             public Object call() throws IOException
             {
@@ -126,6 +126,6 @@ public class TestAlwaysRetryable
     @Test(expected = IllegalStateException.class)
     public void execute_without_an_implementation_should_throw_an_IllegalStateException()
     {
-        new AlwaysRetryable().executeWith(retryExecutor());
+        new DefaultRetryable().executeWith(retryExecutor());
     }
 }
