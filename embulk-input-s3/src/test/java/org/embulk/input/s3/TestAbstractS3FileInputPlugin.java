@@ -1,11 +1,13 @@
 package org.embulk.input.s3;
 
+import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.GetObjectMetadataRequest;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.common.base.Optional;
+import org.apache.http.HttpStatus;
 import org.embulk.EmbulkTestRuntime;
 import org.embulk.spi.util.RetryExecutor;
 import org.junit.Before;
@@ -81,6 +83,52 @@ public class TestAbstractS3FileInputPlugin
         dummyS3Plugin().listS3FilesByPrefix(
                 builder, client, "some_bucket", "some_prefix", Optional.of("last_path"), true,
                 retryExecutor().withRetryLimit(0));
+    }
+
+    @Test(expected = AmazonServiceException.class)
+    public void listS3FileByPrefix_on_retry_gave_up_should_throw_the_original_exception_in_forbidden_code()
+    {
+        AmazonServiceException exception = new AmazonServiceException("Forbidden exception");
+        exception.setStatusCode(HttpStatus.SC_FORBIDDEN);
+        exception.setErrorType(AmazonServiceException.ErrorType.Client);
+
+        doThrow(exception).doReturn(new ObjectListing())
+                .when(client).listObjects(any(ListObjectsRequest.class));
+        FileList.Builder builder = new FileList.Builder();
+        dummyS3Plugin().listS3FilesByPrefix(
+                builder, client, "some_bucket", "some_prefix", Optional.of("last_path"), true,
+                retryExecutor().withRetryLimit(1));
+    }
+
+    @Test(expected = AmazonServiceException.class)
+    public void listS3FileByPrefix_on_retry_gave_up_should_throw_the_original_exception_in_methodnotallow_code()
+    {
+        AmazonServiceException exception = new AmazonServiceException("method not allow exception");
+        exception.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
+        exception.setErrorType(AmazonServiceException.ErrorType.Client);
+
+        doThrow(exception).doReturn(new ObjectListing())
+                .when(client).listObjects(any(ListObjectsRequest.class));
+        FileList.Builder builder = new FileList.Builder();
+        dummyS3Plugin().listS3FilesByPrefix(
+                builder, client, "some_bucket", "some_prefix", Optional.of("last_path"), true,
+                retryExecutor().withRetryLimit(1));
+    }
+
+    @Test(expected = AmazonServiceException.class)
+    public void listS3FileByPrefix_on_retry_gave_up_should_throw_the_original_exception_in_expiredToken_code()
+    {
+        AmazonServiceException exception = new AmazonServiceException("expired token exception");
+        exception.setStatusCode(HttpStatus.SC_BAD_REQUEST);
+        exception.setErrorCode("ExpiredToken");
+        exception.setErrorType(AmazonServiceException.ErrorType.Client);
+
+        doThrow(exception).doReturn(new ObjectListing())
+                .when(client).listObjects(any(ListObjectsRequest.class));
+        FileList.Builder builder = new FileList.Builder();
+        dummyS3Plugin().listS3FilesByPrefix(
+                builder, client, "some_bucket", "some_prefix", Optional.of("last_path"), true,
+                retryExecutor().withRetryLimit(1));
     }
 
     @Test

@@ -1,10 +1,14 @@
 package org.embulk.input.s3;
 
+import com.amazonaws.AmazonServiceException;
 import com.google.common.base.Throwables;
+import org.apache.http.HttpStatus;
 import org.embulk.spi.Exec;
 import org.embulk.spi.util.RetryExecutor;
 import org.slf4j.Logger;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.Callable;
 
 import static java.lang.String.format;
@@ -12,20 +16,27 @@ import static org.embulk.spi.util.RetryExecutor.RetryGiveupException;
 import static org.embulk.spi.util.RetryExecutor.Retryable;
 
 /**
- * Always retry, regardless the occurred exceptions,
+ * Retryable utility, regardless the occurred exceptions,
  * Also provide a default approach for exception propagation.
  */
-class AlwaysRetryable<T> implements Retryable<T>
+class DefaultRetryable<T> implements Retryable<T>
 {
-    private static final Logger log = Exec.getLogger(AlwaysRetryable.class);
-
+    private static final Logger log = Exec.getLogger(DefaultRetryable.class);
+    private static final Set<Integer> NONRETRYABLE_STATUS_CODES = new HashSet<Integer>(2);
+    private static final Set<String> NONRETRYABLE_ERROR_CODES = new HashSet<String>(1);
     private String operationName;
     private Callable<T> callable;
+
+    static {
+        NONRETRYABLE_STATUS_CODES.add(HttpStatus.SC_FORBIDDEN);
+        NONRETRYABLE_STATUS_CODES.add(HttpStatus.SC_METHOD_NOT_ALLOWED);
+        NONRETRYABLE_ERROR_CODES.add("ExpiredToken");
+    }
 
     /**
      * @param operationName the name that will be referred on logging
      */
-    public AlwaysRetryable(String operationName)
+    public DefaultRetryable(String operationName)
     {
         this.operationName = operationName;
     }
@@ -34,18 +45,18 @@ class AlwaysRetryable<T> implements Retryable<T>
      * @param operationName the name that will be referred on logging
      * @param callable the operation, either define this at construction time or override the call() method
      */
-    public AlwaysRetryable(String operationName, Callable<T> callable)
+    public DefaultRetryable(String operationName, Callable<T> callable)
     {
         this.operationName = operationName;
         this.callable = callable;
     }
 
-    public AlwaysRetryable()
+    public DefaultRetryable()
     {
         this("Anonymous operation");
     }
 
-    public AlwaysRetryable(Callable<T> callable)
+    public DefaultRetryable(Callable<T> callable)
     {
         this("Anonymous operation", callable);
     }
@@ -64,6 +75,11 @@ class AlwaysRetryable<T> implements Retryable<T>
     @Override
     public boolean isRetryableException(Exception exception)
     {
+        // No retry on a subset of service exceptions
+        if (exception instanceof AmazonServiceException) {
+            AmazonServiceException ase = (AmazonServiceException) exception;
+            return !NONRETRYABLE_STATUS_CODES.contains(ase.getStatusCode()) && !NONRETRYABLE_ERROR_CODES.contains(ase.getErrorCode());
+        }
         return true;
     }
 

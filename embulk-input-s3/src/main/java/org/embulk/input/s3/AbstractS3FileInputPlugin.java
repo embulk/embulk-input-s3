@@ -4,6 +4,7 @@ import com.amazonaws.AmazonServiceException;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.Protocol;
 import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.retry.PredefinedRetryPolicies;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.GetObjectMetadataRequest;
@@ -177,11 +178,12 @@ public abstract class AbstractS3FileInputPlugin
     {
         ClientConfiguration clientConfig = new ClientConfiguration();
 
+        /** PLT-9886: disable built-in retry*/
         //clientConfig.setProtocol(Protocol.HTTP);
-        clientConfig.setMaxConnections(50); // SDK default: 50
-        clientConfig.setMaxErrorRetry(3); // SDK default: 3
-        clientConfig.setSocketTimeout(8 * 60 * 1000); // SDK default: 50*1000
-
+//        clientConfig.setMaxConnections(50); // SDK default: 50
+//        clientConfig.setMaxErrorRetry(3); // SDK default: 3
+//        clientConfig.setSocketTimeout(8 * 60 * 1000); // SDK default: 50*1000
+        clientConfig.setRetryPolicy(PredefinedRetryPolicies.NO_RETRY_POLICY);
         // set http proxy
         if (task.getHttpProxy().isPresent()) {
             setHttpProxyInAwsClient(clientConfig, task.getHttpProxy().get());
@@ -283,7 +285,7 @@ public abstract class AbstractS3FileInputPlugin
     {
         final GetObjectMetadataRequest objectMetadataRequest = new GetObjectMetadataRequest(bucket, objectKey);
 
-        ObjectMetadata objectMetadata = new AlwaysRetryable<ObjectMetadata>("Looking up for a single object") {
+        ObjectMetadata objectMetadata = new DefaultRetryable<ObjectMetadata>("Looking up for a single object") {
             @Override
             public ObjectMetadata call()
             {
@@ -337,7 +339,7 @@ public abstract class AbstractS3FileInputPlugin
         do {
             final String finalLastKey = lastKey;
             final ListObjectsRequest req = new ListObjectsRequest(bucketName, prefix, finalLastKey, null, 1024);
-            ObjectListing ol = new AlwaysRetryable<ObjectListing>("Listing objects") {
+            ObjectListing ol = new DefaultRetryable<ObjectListing>("Listing objects") {
                 @Override
                 public ObjectListing call()
                 {
@@ -403,7 +405,7 @@ public abstract class AbstractS3FileInputPlugin
             log.warn(String.format("S3 read failed. Retrying GET request with %,d bytes offset", offset), closedCause);
             request.setRange(offset, contentLength - 1);  // [first, last]
 
-            return new AlwaysRetryable<S3ObjectInputStream>("Opening the file") {
+            return new DefaultRetryable<S3ObjectInputStream>("Opening the file") {
                 @Override
                 public S3ObjectInputStream call()
                 {
