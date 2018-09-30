@@ -462,12 +462,18 @@ public abstract class AbstractS3FileInputPlugin
             if (!iterator.hasNext()) {
                 return null;
             }
-            String key = iterator.next();
-            GetObjectRequest request = new GetObjectRequest(bucket, key);
-            S3Object obj = client.getObject(request);
-            long objectSize = obj.getObjectMetadata().getContentLength();
-            LOGGER.info("Open S3Object with bucket [{}], key [{}], with size [{}]", bucket, key, objectSize);
-            return new ResumableInputStream(obj.getObjectContent(), new S3InputStreamReopener(client, request, objectSize, retryExec));
+            final String key = iterator.next();
+            final GetObjectRequest request = new GetObjectRequest(bucket, key);
+            return new DefaultRetryable<ResumableInputStream>("Opening the file") {
+                @Override
+                public ResumableInputStream call() throws Exception
+                {
+                    S3Object obj = client.getObject(request);
+                    long objectSize = obj.getObjectMetadata().getContentLength();
+                    LOGGER.info("Open S3Object with bucket [{}], key [{}], with size [{}]", bucket, key, objectSize);
+                    return new ResumableInputStream(obj.getObjectContent(), new S3InputStreamReopener(client, request, objectSize, retryExec));
+                }
+            }.executeWithCheckedException(retryExec, IOException.class);
         }
 
         @Override
