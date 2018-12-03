@@ -31,6 +31,7 @@ import org.embulk.spi.Exec;
 import org.embulk.spi.FileInputPlugin;
 import org.embulk.spi.TransactionalFileInput;
 import org.embulk.spi.util.InputStreamFileInput;
+import org.embulk.spi.util.InputStreamFileInput.InputStreamWithHints;
 import org.embulk.spi.util.ResumableInputStream;
 import org.embulk.spi.util.RetryExecutor;
 import org.embulk.util.aws.credentials.AwsCredentials;
@@ -458,12 +459,12 @@ public abstract class AbstractS3FileInputPlugin
         }
 
         @Override
-        public InputStream openNext() throws IOException
+        public InputStreamWithHints openNextWithHints() throws IOException
         {
             if (!iterator.hasNext()) {
                 return null;
             }
-            final String key = iterator.next();
+            String key = iterator.next();
             final GetObjectRequest request = new GetObjectRequest(bucket, key);
 
             S3Object object = new DefaultRetryable<S3Object>(format("Getting object '%s'", request.getKey())) {
@@ -475,8 +476,8 @@ public abstract class AbstractS3FileInputPlugin
             }.executeWithCheckedException(retryExec, IOException.class);
 
             long objectSize = object.getObjectMetadata().getContentLength();
-            LOGGER.info("Open S3Object with bucket [{}], key [{}], with size [{}]", bucket, key, objectSize);
-            return new ResumableInputStream(object.getObjectContent(), new S3InputStreamReopener(client, request, objectSize, retryExec));
+            InputStream inputStream = new ResumableInputStream(object.getObjectContent(), new S3InputStreamReopener(client, request, objectSize, retryExec));
+            return new InputStreamWithHints(inputStream, String.format("s3://%s/%s", bucket, key));
         }
 
         @Override
