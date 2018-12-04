@@ -17,7 +17,6 @@ import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.services.s3.model.StorageClass;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Optional;
 import org.embulk.config.Config;
 import org.embulk.config.ConfigDefault;
 import org.embulk.config.ConfigDiff;
@@ -42,6 +41,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 
 import static java.lang.String.format;
 import static org.embulk.spi.util.RetryExecutor.retryExecutor;
@@ -130,7 +130,7 @@ public abstract class AbstractS3FileInputPlugin
         // last_path
         if (task.getIncremental()) {
             Optional<String> lastPath = task.getFiles().getLastPath(task.getLastPath());
-            LOGGER.info("Incremental job, setting last_path to [{}]", lastPath.orNull());
+            LOGGER.info("Incremental job, setting last_path to [{}]", lastPath.orElse(""));
             configDiff.set("last_path", lastPath);
         }
         return configDiff;
@@ -336,7 +336,7 @@ public abstract class AbstractS3FileInputPlugin
                                            boolean skipGlacierObjects,
                                            RetryExecutor retryExec)
     {
-        String lastKey = lastPath.orNull();
+        String lastKey = lastPath.orElse(null);
         do {
             final String finalLastKey = lastKey;
             final ListObjectsRequest req = new ListObjectsRequest(bucketName, prefix, finalLastKey, null, 1024);

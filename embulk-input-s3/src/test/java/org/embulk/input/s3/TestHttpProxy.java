@@ -1,12 +1,13 @@
 package org.embulk.input.s3;
 
-import com.google.common.base.Optional;
 import org.embulk.EmbulkTestRuntime;
 import org.embulk.config.ConfigSource;
 import org.embulk.input.s3.S3FileInputPlugin.S3PluginTask;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -41,7 +42,7 @@ public class TestHttpProxy
             String host = "my_host";
             ConfigSource conf = config.deepCopy().set("host", host);
             HttpProxy httpProxy = conf.loadConfig(HttpProxy.class);
-            assertHttpProxy(host, Optional.<Integer>absent(), true, Optional.<String>absent(), Optional.<String>absent(),
+            assertHttpProxy(host, Optional.empty(), true, Optional.empty(), Optional.empty(),
                     httpProxy);
         }
 
@@ -51,7 +52,7 @@ public class TestHttpProxy
                     .set("host", host)
                     .set("https", true);
             HttpProxy httpProxy = conf.loadConfig(HttpProxy.class);
-            assertHttpProxy(host, Optional.<Integer>absent(), true, Optional.<String>absent(), Optional.<String>absent(),
+            assertHttpProxy(host, Optional.empty(), true, Optional.empty(), Optional.empty(),
                     httpProxy);
         }
 
@@ -61,7 +62,7 @@ public class TestHttpProxy
                     .set("host", host)
                     .set("https", false);
             HttpProxy httpProxy = conf.loadConfig(HttpProxy.class);
-            assertHttpProxy(host, Optional.<Integer>absent(), false, Optional.<String>absent(), Optional.<String>absent(),
+            assertHttpProxy(host, Optional.empty(), false, Optional.empty(), Optional.empty(),
                     httpProxy);
         }
 
@@ -72,7 +73,7 @@ public class TestHttpProxy
                     .set("host", host)
                     .set("port", port);
             HttpProxy httpProxy = conf.loadConfig(HttpProxy.class);
-            assertHttpProxy(host, Optional.of(port), true, Optional.<String>absent(), Optional.<String>absent(),
+            assertHttpProxy(host, Optional.of(port), true, Optional.empty(), Optional.empty(),
                     httpProxy);
         }
 

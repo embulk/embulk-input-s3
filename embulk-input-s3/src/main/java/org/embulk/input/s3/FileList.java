@@ -3,7 +3,6 @@ package org.embulk.input.s3;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 
 import org.embulk.config.Config;
@@ -23,6 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -179,7 +179,7 @@ public class FileList
             catch (IOException ex) {
                 throw Throwables.propagate(ex);
             }
-            return new FileList(binary.toByteArray(), getSplits(entries), Optional.fromNullable(last));
+            return new FileList(binary.toByteArray(), getSplits(entries), Optional.ofNullable(last));
         }
 
         private List<List<Entry>> getSplits(List<Entry> all)

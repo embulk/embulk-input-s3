@@ -3,11 +3,12 @@ package org.embulk.input.s3;
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.google.common.base.Optional;
 import org.embulk.config.Config;
 import org.embulk.config.ConfigDefault;
 import org.embulk.spi.Exec;
 import org.slf4j.Logger;
+
+import java.util.Optional;
 
 public class S3FileInputPlugin
         extends AbstractS3FileInputPlugin

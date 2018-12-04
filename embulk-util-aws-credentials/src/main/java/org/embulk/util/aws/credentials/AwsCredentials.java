@@ -13,11 +13,11 @@ import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.amazonaws.auth.SystemPropertiesCredentialsProvider;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.auth.profile.ProfilesConfigFile;
-import com.google.common.base.Optional;
 import org.embulk.config.ConfigException;
 import org.embulk.spi.Exec;
-import org.embulk.spi.unit.LocalFile;
 import org.slf4j.Logger;
+
+import java.util.Optional;
 
 public abstract class AwsCredentials
 {
@@ -108,7 +108,7 @@ public abstract class AwsCredentials
                 reject(task.getSecretAccessKey(), secretAccessKeyOption);
                 reject(task.getSessionToken(), sessionTokenOption);
 
-                String profileName = task.getProfileName().or("default");
+                String profileName = task.getProfileName().orElse("default");
                 ProfileCredentialsProvider provider;
                 if (task.getProfileFile().isPresent()) {
                     ProfilesConfigFile file = new ProfilesConfigFile(task.getProfileFile().get().getFile());
@@ -117,8 +117,8 @@ public abstract class AwsCredentials
                 else {
                     provider = new ProfileCredentialsProvider(profileName);
                 }
-                task.setProfileName(Optional.<String>absent());
-                task.setProfileFile(Optional.<LocalFile>absent());
+                task.setProfileName(Optional.empty());
+                task.setProfileFile(Optional.empty());
 
                 return overwriteBasicCredentials(task, provider.getCredentials());
             }
