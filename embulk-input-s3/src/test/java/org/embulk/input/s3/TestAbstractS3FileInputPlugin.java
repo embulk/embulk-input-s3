@@ -6,13 +6,14 @@ import com.amazonaws.services.s3.model.GetObjectMetadataRequest;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.google.common.base.Optional;
 import org.apache.http.HttpStatus;
 import org.embulk.EmbulkTestRuntime;
 import org.embulk.spi.util.RetryExecutor;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.Optional;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doReturn;

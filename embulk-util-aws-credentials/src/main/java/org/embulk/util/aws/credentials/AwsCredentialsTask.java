@@ -1,9 +1,10 @@
 package org.embulk.util.aws.credentials;
 
-import com.google.common.base.Optional;
 import org.embulk.config.Config;
 import org.embulk.config.ConfigDefault;
 import org.embulk.spi.unit.LocalFile;
+
+import java.util.Optional;
 
 public interface AwsCredentialsTask
     extends AwsCredentialsConfig

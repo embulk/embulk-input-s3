@@ -1,9 +1,10 @@
 package org.embulk.input.s3;
 
-import com.google.common.base.Optional;
 import org.embulk.config.Config;
 import org.embulk.config.ConfigDefault;
 import org.embulk.config.Task;
+
+import java.util.Optional;
 
 /**
  * HttpProxy is config unit for Input/Output plugins' configs.

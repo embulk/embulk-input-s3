@@ -63,15 +63,15 @@ subprojects {
     targetCompatibility = 1.8
 
     dependencies {
-        compile  "org.embulk:embulk-core:0.8.18"
-        provided "org.embulk:embulk-core:0.8.18"
+        compile  "org.embulk:embulk-core:0.9.11"
+        provided "org.embulk:embulk-core:0.9.11"
         compile "com.amazonaws:aws-java-sdk-s3:1.11.253"
         runtime "org.slf4j:jcl-over-slf4j:1.7.12"  // aws-sdk uses Apache Commons Logging and Embulk uses slf4j
         testCompile "com.amazonaws:aws-java-sdk-sts:1.11.253"
         testCompile "junit:junit:4.+"
         testCompile "org.mockito:mockito-core:1.+"
-        testCompile "org.embulk:embulk-standards:0.8.18"
-        testCompile "org.embulk:embulk-core:0.8.18:tests"
+        testCompile "org.embulk:embulk-standards:0.9.11"
+        testCompile "org.embulk:embulk-core:0.9.11:tests"
     }
 
     gradle.projectsEvaluated {
