@@ -14,7 +14,7 @@ public class RiakCsFileInputPlugin
             extends PluginTask
     {
         @Config("endpoint")
-        public String getEndpoint();
+        String getEndpoint();
     }
 
     @Override

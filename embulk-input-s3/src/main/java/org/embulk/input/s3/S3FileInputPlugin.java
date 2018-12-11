@@ -18,11 +18,11 @@ public class S3FileInputPlugin
     {
         @Config("endpoint")
         @ConfigDefault("null")
-        public Optional<String> getEndpoint();
+        Optional<String> getEndpoint();
 
         @Config("region")
         @ConfigDefault("null")
-        public Optional<String> getRegion();
+        Optional<String> getRegion();
     }
 
     private static final Logger log = Exec.getLogger(S3FileInputPlugin.class);

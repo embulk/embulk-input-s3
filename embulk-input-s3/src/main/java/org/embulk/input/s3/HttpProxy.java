@@ -16,21 +16,21 @@ public interface HttpProxy
     extends Task
 {
     @Config("host")
-    public String getHost();
+    String getHost();
 
     @Config("port")
     @ConfigDefault("null")
-    public Optional<Integer> getPort();
+    Optional<Integer> getPort();
 
     @Config("https")
     @ConfigDefault("true")
-    public boolean getHttps();
+    boolean getHttps();
 
     @Config("user")
     @ConfigDefault("null")
-    public Optional<String> getUser();
+    Optional<String> getUser();
 
     @Config("password")
     @ConfigDefault("null")
-    public Optional<String> getPassword();
+    Optional<String> getPassword();
 }

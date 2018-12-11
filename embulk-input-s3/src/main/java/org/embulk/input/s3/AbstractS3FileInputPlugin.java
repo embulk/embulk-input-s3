@@ -55,46 +55,46 @@ public abstract class AbstractS3FileInputPlugin
             extends AwsCredentialsTask, FileList.Task, RetrySupportPluginTask, Task
     {
         @Config("bucket")
-        public String getBucket();
+        String getBucket();
 
         @Config("path_prefix")
         @ConfigDefault("null")
-        public Optional<String> getPathPrefix();
+        Optional<String> getPathPrefix();
 
         @Config("path")
         @ConfigDefault("null")
-        public Optional<String> getPath();
+        Optional<String> getPath();
 
         @Config("last_path")
         @ConfigDefault("null")
-        public Optional<String> getLastPath();
+        Optional<String> getLastPath();
 
         @Config("access_key_id")
         @ConfigDefault("null")
-        public Optional<String> getAccessKeyId();
+        Optional<String> getAccessKeyId();
 
         @Config("http_proxy")
         @ConfigDefault("null")
-        public Optional<HttpProxy> getHttpProxy();
+        Optional<HttpProxy> getHttpProxy();
 
-        public void setHttpProxy(Optional<HttpProxy> httpProxy);
+        void setHttpProxy(Optional<HttpProxy> httpProxy);
 
         @Config("incremental")
         @ConfigDefault("true")
-        public boolean getIncremental();
+        boolean getIncremental();
 
         @Config("skip_glacier_objects")
         @ConfigDefault("false")
-        public boolean getSkipGlacierObjects();
+        boolean getSkipGlacierObjects();
 
         // TODO timeout, ssl, etc
 
-        public FileList getFiles();
+        FileList getFiles();
 
-        public void setFiles(FileList files);
+        void setFiles(FileList files);
 
         @ConfigInject
-        public BufferAllocator getBufferAllocator();
+        BufferAllocator getBufferAllocator();
     }
 
     protected abstract Class<? extends PluginTask> getTaskClass();
