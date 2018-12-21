@@ -464,7 +464,7 @@ public abstract class AbstractS3FileInputPlugin
             if (!iterator.hasNext()) {
                 return null;
             }
-            String key = iterator.next();
+            final String key = iterator.next();
             final GetObjectRequest request = new GetObjectRequest(bucket, key);
 
             S3Object object = new DefaultRetryable<S3Object>(format("Getting object '%s'", request.getKey())) {
