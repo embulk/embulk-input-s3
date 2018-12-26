@@ -2,6 +2,8 @@
 
 ## Overview
 
+embulk-input-s3 v0.3.0+ requires Embulk v0.9.12+
+
 * Plugin type: **file input**
 * Resume supported: **yes**
 * Cleanup supported: **yes**

@@ -1,3 +1,9 @@
+Release 0.3.0 - 2018-12-26
+* Use file name output feature in Embulk core to show file name instead of logging [#78]
+
+Release 0.2.21 - 2018-10-08
+* Enhancement for retrying logic [#76]
+
 Release 0.2.20 - 2018-07-23
 * Enhancement for retrying logic [#74]
 ** Don't allow to retry on some AWS error and status code.
