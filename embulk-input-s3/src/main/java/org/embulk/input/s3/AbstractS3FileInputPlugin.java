@@ -180,11 +180,10 @@ public abstract class AbstractS3FileInputPlugin
     {
         ClientConfiguration clientConfig = new ClientConfiguration();
 
-        /** PLT-9886: disable built-in retry*/
         //clientConfig.setProtocol(Protocol.HTTP);
-//        clientConfig.setMaxConnections(50); // SDK default: 50
+        clientConfig.setMaxConnections(50); // SDK default: 50
 //        clientConfig.setMaxErrorRetry(3); // SDK default: 3
-//        clientConfig.setSocketTimeout(8 * 60 * 1000); // SDK default: 50*1000
+        clientConfig.setSocketTimeout(8 * 60 * 1000); // SDK default: 50*1000
         clientConfig.setRetryPolicy(PredefinedRetryPolicies.NO_RETRY_POLICY);
         // set http proxy
         if (task.getHttpProxy().isPresent()) {
