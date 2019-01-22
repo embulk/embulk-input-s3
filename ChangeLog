@@ -1,3 +1,6 @@
+Release 0.3.1 - 2019-01-22
+* Restore "max connection" and "socket timeout" settings to prevent SocketTimeoutException [#83]
+
 Release 0.3.0 - 2018-12-26
 * Use file name output feature in Embulk core to show file name instead of logging [#78]
 
