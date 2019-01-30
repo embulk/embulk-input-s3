@@ -475,6 +475,9 @@ public abstract class AbstractS3FileInputPlugin
             }.executeWithCheckedException(retryExec, IOException.class);
 
             long objectSize = object.getObjectMetadata().getContentLength();
+            // Some plugin users are parsing this output to get file list.
+            // Keep it for now but might be removed in the future.
+            LOGGER.info("Open S3Object with bucket [{}], key [{}], with size [{}]", bucket, key, objectSize);
             InputStream inputStream = new ResumableInputStream(object.getObjectContent(), new S3InputStreamReopener(client, request, objectSize, retryExec));
             return new InputStreamWithHints(inputStream, String.format("s3://%s/%s", bucket, key));
         }
