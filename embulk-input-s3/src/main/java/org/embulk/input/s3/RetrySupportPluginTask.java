@@ -11,7 +11,7 @@ public interface RetrySupportPluginTask extends Task
     int getMaximumRetries();
 
     @Config("initial_retry_interval_millis")
-    @ConfigDefault("30000")
+    @ConfigDefault("2000")
     int getInitialRetryIntervalMillis();
 
     @Config("maximum_retry_interval_millis")
