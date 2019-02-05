@@ -184,7 +184,6 @@ public abstract class AbstractS3FileInputPlugin
         clientConfig.setMaxConnections(50); // SDK default: 50
 //        clientConfig.setMaxErrorRetry(3); // SDK default: 3
         clientConfig.setSocketTimeout(8 * 60 * 1000); // SDK default: 50*1000
-        clientConfig.setRetryPolicy(PredefinedRetryPolicies.NO_RETRY_POLICY);
         // set http proxy
         if (task.getHttpProxy().isPresent()) {
             setHttpProxyInAwsClient(clientConfig, task.getHttpProxy().get());
