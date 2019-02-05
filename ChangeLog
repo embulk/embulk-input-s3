@@ -1,3 +1,6 @@
+Release 0.3.3 - 2019-02-05
+* Change `initial_retry_interval_millis` value from 30 sec to 2 sec [#86]
+
 Release 0.3.2 - 2019-01-30
 * Revert log format change to show loaded file name [#84]
 
