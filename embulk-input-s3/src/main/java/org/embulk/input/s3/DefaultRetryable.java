@@ -19,7 +19,7 @@ import static org.embulk.spi.util.RetryExecutor.Retryable;
  * Retryable utility, regardless the occurred exceptions,
  * Also provide a default approach for exception propagation.
  */
-class DefaultRetryable<T> implements Retryable<T>
+public class DefaultRetryable<T> implements Retryable<T>
 {
     private static final Logger log = Exec.getLogger(DefaultRetryable.class);
     private static final Set<Integer> NONRETRYABLE_STATUS_CODES = new HashSet<Integer>(2);
