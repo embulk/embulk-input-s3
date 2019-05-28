@@ -7,15 +7,9 @@ import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.retry.PredefinedRetryPolicies;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.GetObjectMetadataRequest;
 import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.services.s3.model.ListObjectsRequest;
-import com.amazonaws.services.s3.model.ObjectListing;
-import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
-import com.amazonaws.services.s3.model.StorageClass;
 import com.google.common.annotations.VisibleForTesting;
 import org.embulk.config.Config;
 import org.embulk.config.ConfigDefault;
@@ -319,105 +313,11 @@ public abstract class AbstractS3FileInputPlugin
         }
     }
 
-    @VisibleForTesting
-    public void addS3DirectObject(FileList.Builder builder,
-                                  final AmazonS3 client,
-                                  String bucket,
-                                  String objectKey)
-    {
-        addS3DirectObject(builder, client, bucket, objectKey, null);
-    }
-
-    @VisibleForTesting
-    public void addS3DirectObject(FileList.Builder builder,
-                                   final AmazonS3 client,
-                                   String bucket,
-                                   String objectKey,
-                                   RetryExecutor retryExec)
-    {
-        final GetObjectMetadataRequest objectMetadataRequest = new GetObjectMetadataRequest(bucket, objectKey);
-
-        ObjectMetadata objectMetadata = new DefaultRetryable<ObjectMetadata>("Looking up for a single object") {
-            @Override
-            public ObjectMetadata call()
-            {
-                return client.getObjectMetadata(objectMetadataRequest);
-            }
-        }.executeWith(retryExec);
-
-        builder.add(objectKey, objectMetadata.getContentLength());
-    }
-
-    private void validateInputTask(PluginTask task)
+    private void validateInputTask(final PluginTask task)
     {
         if (!task.getPathPrefix().isPresent() && !task.getPath().isPresent()) {
             throw new ConfigException("Either path or path_prefix is required");
         }
-    }
-
-    @VisibleForTesting
-    public static void listS3FilesByPrefix(FileList.Builder builder,
-                                           final AmazonS3 client,
-                                           String bucketName,
-                                           String prefix,
-                                           Optional<String> lastPath,
-                                           boolean skipGlacierObjects)
-    {
-        listS3FilesByPrefix(builder, client, bucketName, prefix, lastPath, skipGlacierObjects, null);
-    }
-
-    /**
-     * Lists S3 filenames filtered by prefix.
-     * <p>
-     * The resulting list does not include the file that's size == 0.
-     * @param builder custom Filelist builder
-     * @param client Amazon S3
-     * @param bucketName Amazon S3 bucket name
-     * @param prefix Amazon S3 bucket name prefix
-     * @param lastPath last path
-     * @param skipGlacierObjects skip gracier objects
-     * @param retryExec a retry executor object to do the retrying
-     */
-    @VisibleForTesting
-    public static void listS3FilesByPrefix(FileList.Builder builder,
-                                           final AmazonS3 client,
-                                           String bucketName,
-                                           String prefix,
-                                           Optional<String> lastPath,
-                                           boolean skipGlacierObjects,
-                                           RetryExecutor retryExec)
-    {
-        String lastKey = lastPath.orElse(null);
-        do {
-            final String finalLastKey = lastKey;
-            final ListObjectsRequest req = new ListObjectsRequest(bucketName, prefix, finalLastKey, null, 1024);
-            ObjectListing ol = new DefaultRetryable<ObjectListing>("Listing objects") {
-                @Override
-                public ObjectListing call()
-                {
-                    return client.listObjects(req);
-                }
-            }.executeWith(retryExec);
-            for (S3ObjectSummary s : ol.getObjectSummaries()) {
-                if (s.getStorageClass().equals(StorageClass.Glacier.toString())) {
-                    if (skipGlacierObjects) {
-                        Exec.getLogger("AbstractS3FileInputPlugin.class").warn("Skipped \"s3://{}/{}\" that stored at Glacier.", bucketName, s.getKey());
-                        continue;
-                    }
-                    else {
-                        throw new ConfigException("Detected an object stored at Glacier. Set \"skip_glacier_objects\" option to \"true\" to skip this.");
-                    }
-                }
-                if (s.getSize() > 0) {
-                    builder.add(s.getKey(), s.getSize());
-                    if (!builder.needsMore()) {
-                        LOGGER.warn("Too many files matched, stop listing file");
-                        return;
-                    }
-                }
-            }
-            lastKey = ol.getNextMarker();
-        } while (lastKey != null);
     }
 
     @Override
