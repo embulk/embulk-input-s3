@@ -48,7 +48,7 @@ public class TestS3TimeOrderPrefixFileExplorer
     }
 
     @Test
-    public void fetch_should_return_list_filtered_objects_by_time()
+    public void fetch_should_return_filtered_objects_before_end_time()
     {
         final S3ObjectSummary s3ObjectBefore = mock(S3ObjectSummary.class);
         final Calendar cal = Calendar.getInstance();
@@ -66,6 +66,41 @@ public class TestS3TimeOrderPrefixFileExplorer
         final List<S3ObjectSummary> result = s3TimeOrderPrefixFileExplorer.fetch();
         assertEquals(1, result.size());
         assertEquals(s3ObjectBefore, result.get(0));
+    }
+
+    @Test
+    public void fetch_should_return_filtered_objects_after_or_equals_begin_time()
+    {
+        final Calendar to = Calendar.getInstance();
+        to.set(2019, Calendar.MAY, 25, 10, 0);
+        final Calendar from = Calendar.getInstance();
+        from.set(2019, Calendar.MAY, 24, 10, 0);
+        s3TimeOrderPrefixFileExplorer = new S3TimeOrderPrefixFileExplorer(BUCKET_NAME, s3Client, null, PATH_PREFIX,
+                false, Optional.of(from.getTime()), to.getTime());
+
+        final S3ObjectSummary s3ObjectEqual = mock(S3ObjectSummary.class);
+        final Calendar equalCal = Calendar.getInstance();
+        equalCal.set(2019, Calendar.MAY, 24, 10, 0);
+        when(s3ObjectEqual.getLastModified()).thenReturn(equalCal.getTime());
+
+        final S3ObjectSummary s3ObjectBefore = mock(S3ObjectSummary.class);
+        final Calendar beforeCal = Calendar.getInstance();
+        beforeCal.set(2019, Calendar.MAY, 24, 20, 0);
+        when(s3ObjectBefore.getLastModified()).thenReturn(beforeCal.getTime());
+
+        final S3ObjectSummary s3ObjectAfter = mock(S3ObjectSummary.class);
+        final Calendar afterCal = Calendar.getInstance();
+        afterCal.set(2019, Calendar.MAY, 26, 10, 0);
+        when(s3ObjectAfter.getLastModified()).thenReturn(afterCal.getTime());
+
+        final ObjectListing ol = mock(ObjectListing.class);
+        when(s3Client.listObjects(any(ListObjectsRequest.class))).thenReturn(ol);
+        when(ol.getObjectSummaries()).thenReturn(Arrays.asList(s3ObjectEqual, s3ObjectBefore, s3ObjectAfter));
+
+        final List<S3ObjectSummary> result = s3TimeOrderPrefixFileExplorer.fetch();
+        assertEquals(2, result.size());
+        assertEquals(s3ObjectEqual, result.get(0));
+        assertEquals(s3ObjectBefore, result.get(1));
     }
 
     @Test

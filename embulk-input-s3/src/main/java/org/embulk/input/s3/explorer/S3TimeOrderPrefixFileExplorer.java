@@ -52,7 +52,8 @@ public class S3TimeOrderPrefixFileExplorer extends S3PrefixFileExplorer
 
         return objectListing.getObjectSummaries()
                 .stream()
-                .filter(s3ObjectSummary -> s3ObjectSummary.getLastModified().before(to) && (!from.isPresent() || s3ObjectSummary.getLastModified().after(from.get())))
+                .filter(s3ObjectSummary -> s3ObjectSummary.getLastModified().before(to)
+                        && (!from.isPresent() || s3ObjectSummary.getLastModified().equals(from.get()) || s3ObjectSummary.getLastModified().after(from.get())))
                 .collect(Collectors.toList());
     }
 
