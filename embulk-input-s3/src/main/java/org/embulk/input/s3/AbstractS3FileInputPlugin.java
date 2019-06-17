@@ -7,15 +7,9 @@ import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.retry.PredefinedRetryPolicies;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.GetObjectMetadataRequest;
 import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.services.s3.model.ListObjectsRequest;
-import com.amazonaws.services.s3.model.ObjectListing;
-import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
-import com.amazonaws.services.s3.model.StorageClass;
 import com.google.common.annotations.VisibleForTesting;
 import org.embulk.config.Config;
 import org.embulk.config.ConfigDefault;
@@ -26,6 +20,10 @@ import org.embulk.config.ConfigSource;
 import org.embulk.config.Task;
 import org.embulk.config.TaskReport;
 import org.embulk.config.TaskSource;
+import org.embulk.input.s3.explorer.S3NameOrderPrefixFileExplorer;
+import org.embulk.input.s3.explorer.S3SingleFileExplorer;
+import org.embulk.input.s3.explorer.S3TimeOrderPrefixFileExplorer;
+import org.embulk.input.s3.utils.DateUtils;
 import org.embulk.spi.BufferAllocator;
 import org.embulk.spi.Exec;
 import org.embulk.spi.FileInputPlugin;
@@ -40,6 +38,9 @@ import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.SimpleDateFormat;
+import java.util.Collections;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
@@ -51,6 +52,7 @@ public abstract class AbstractS3FileInputPlugin
         implements FileInputPlugin
 {
     private static final Logger LOGGER = Exec.getLogger(S3FileInputPlugin.class);
+    private static final String FULL_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
 
     public interface PluginTask
             extends AwsCredentialsTask, FileList.Task, RetrySupportPluginTask, Task
@@ -88,11 +90,34 @@ public abstract class AbstractS3FileInputPlugin
         @ConfigDefault("false")
         boolean getSkipGlacierObjects();
 
+        @Config("use_modified_time")
+        @ConfigDefault("false")
+        boolean getUseModifiedTime();
+
+        @Config("last_modified_time")
+        @ConfigDefault("null")
+        Optional<String> getLastModifiedTime();
+
         // TODO timeout, ssl, etc
+
+        ////////////////////////////////////////
+        // Internal configurations
+        ////////////////////////////////////////
 
         FileList getFiles();
 
         void setFiles(FileList files);
+
+        /**
+         * end_modified_time is conditionally set if modified_time mode is enabled.
+         *
+         * It is internal state and must not be set in config.yml
+         */
+        @Config("__end_modified_time")
+        @ConfigDefault("null")
+        Optional<Date> getEndModifiedTime();
+
+        void setEndModifiedTime(Optional<Date> endModifiedTime);
 
         @ConfigInject
         BufferAllocator getBufferAllocator();
@@ -105,6 +130,7 @@ public abstract class AbstractS3FileInputPlugin
     {
         PluginTask task = config.loadConfig(getTaskClass());
 
+        errorIfInternalParamsAreSet(task);
         validateInputTask(task);
         // list files recursively
         task.setFiles(listFiles(task));
@@ -130,9 +156,15 @@ public abstract class AbstractS3FileInputPlugin
 
         // last_path
         if (task.getIncremental()) {
-            Optional<String> lastPath = task.getFiles().getLastPath(task.getLastPath());
-            LOGGER.info("Incremental job, setting last_path to [{}]", lastPath.orElse(""));
-            configDiff.set("last_path", lastPath);
+            if (task.getUseModifiedTime()) {
+                Date endModifiedTime = task.getEndModifiedTime().orElse(new Date());
+                configDiff.set("last_modified_time", new SimpleDateFormat(FULL_DATE_FORMAT).format(endModifiedTime));
+            }
+            else {
+                Optional<String> lastPath = task.getFiles().getLastPath(task.getLastPath());
+                LOGGER.info("Incremental job, setting last_path to [{}]", lastPath.orElse(""));
+                configDiff.set("last_path", lastPath);
+            }
         }
         return configDiff;
     }
@@ -237,22 +269,35 @@ public abstract class AbstractS3FileInputPlugin
             String bucketName = task.getBucket();
             FileList.Builder builder = new FileList.Builder(task);
             RetryExecutor retryExec = retryExecutorFrom(task);
+
             if (task.getPath().isPresent()) {
                 LOGGER.info("Start getting object with path: [{}]", task.getPath().get());
-                addS3DirectObject(builder, client, task.getBucket(), task.getPath().get(), retryExec);
+                new S3SingleFileExplorer(bucketName, client, retryExec, task.getPath().get()).addToBuilder(builder);
+                return builder.build();
+            }
+
+            // does not need to verify existent path prefix here since there is the validation requires either path or path_prefix
+            LOGGER.info("Start listing file with prefix [{}]", task.getPathPrefix().get());
+            if (task.getPathPrefix().get().equals("/")) {
+                LOGGER.info("Listing files with prefix \"/\". This doesn't mean all files in a bucket. If you intend to read all files, use \"path_prefix: ''\" (empty string) instead.");
+            }
+
+            if (task.getUseModifiedTime()) {
+                Date now = new Date();
+                Optional<Date> from = task.getLastModifiedTime().isPresent()
+                        ? Optional.of(DateUtils.parse(task.getLastModifiedTime().get(), Collections.singletonList(FULL_DATE_FORMAT)))
+                        : Optional.empty();
+                task.setEndModifiedTime(Optional.of(now));
+
+                new S3TimeOrderPrefixFileExplorer(bucketName, client, retryExec, task.getPathPrefix().get(),
+                        task.getSkipGlacierObjects(), from, now).addToBuilder(builder);
             }
             else {
-                // does not need to verify existent path prefix here since there is the validation requires either path or path_prefix
-                LOGGER.info("Start listing file with prefix [{}]", task.getPathPrefix().get());
-                if (task.getPathPrefix().get().equals("/")) {
-                    LOGGER.info("Listing files with prefix \"/\". This doesn't mean all files in a bucket. If you intend to read all files, use \"path_prefix: ''\" (empty string) instead.");
-                }
-
-                listS3FilesByPrefix(builder, client, bucketName,
-                        task.getPathPrefix().get(), task.getLastPath(), task.getSkipGlacierObjects(), retryExec);
-                LOGGER.info("Found total [{}] files", builder.size());
+                new S3NameOrderPrefixFileExplorer(bucketName, client, retryExec, task.getPathPrefix().get(),
+                        task.getSkipGlacierObjects(), task.getLastPath().orElse(null)).addToBuilder(builder);
             }
 
+            LOGGER.info("Found total [{}] files", builder.size());
             return builder.build();
         }
         catch (AmazonServiceException ex) {
@@ -268,105 +313,11 @@ public abstract class AbstractS3FileInputPlugin
         }
     }
 
-    @VisibleForTesting
-    public void addS3DirectObject(FileList.Builder builder,
-                                  final AmazonS3 client,
-                                  String bucket,
-                                  String objectKey)
-    {
-        addS3DirectObject(builder, client, bucket, objectKey, null);
-    }
-
-    @VisibleForTesting
-    public void addS3DirectObject(FileList.Builder builder,
-                                   final AmazonS3 client,
-                                   String bucket,
-                                   String objectKey,
-                                   RetryExecutor retryExec)
-    {
-        final GetObjectMetadataRequest objectMetadataRequest = new GetObjectMetadataRequest(bucket, objectKey);
-
-        ObjectMetadata objectMetadata = new DefaultRetryable<ObjectMetadata>("Looking up for a single object") {
-            @Override
-            public ObjectMetadata call()
-            {
-                return client.getObjectMetadata(objectMetadataRequest);
-            }
-        }.executeWith(retryExec);
-
-        builder.add(objectKey, objectMetadata.getContentLength());
-    }
-
-    private void validateInputTask(PluginTask task)
+    private void validateInputTask(final PluginTask task)
     {
         if (!task.getPathPrefix().isPresent() && !task.getPath().isPresent()) {
             throw new ConfigException("Either path or path_prefix is required");
         }
-    }
-
-    @VisibleForTesting
-    public static void listS3FilesByPrefix(FileList.Builder builder,
-                                           final AmazonS3 client,
-                                           String bucketName,
-                                           String prefix,
-                                           Optional<String> lastPath,
-                                           boolean skipGlacierObjects)
-    {
-        listS3FilesByPrefix(builder, client, bucketName, prefix, lastPath, skipGlacierObjects, null);
-    }
-
-    /**
-     * Lists S3 filenames filtered by prefix.
-     * <p>
-     * The resulting list does not include the file that's size == 0.
-     * @param builder custom Filelist builder
-     * @param client Amazon S3
-     * @param bucketName Amazon S3 bucket name
-     * @param prefix Amazon S3 bucket name prefix
-     * @param lastPath last path
-     * @param skipGlacierObjects skip gracier objects
-     * @param retryExec a retry executor object to do the retrying
-     */
-    @VisibleForTesting
-    public static void listS3FilesByPrefix(FileList.Builder builder,
-                                           final AmazonS3 client,
-                                           String bucketName,
-                                           String prefix,
-                                           Optional<String> lastPath,
-                                           boolean skipGlacierObjects,
-                                           RetryExecutor retryExec)
-    {
-        String lastKey = lastPath.orElse(null);
-        do {
-            final String finalLastKey = lastKey;
-            final ListObjectsRequest req = new ListObjectsRequest(bucketName, prefix, finalLastKey, null, 1024);
-            ObjectListing ol = new DefaultRetryable<ObjectListing>("Listing objects") {
-                @Override
-                public ObjectListing call()
-                {
-                    return client.listObjects(req);
-                }
-            }.executeWith(retryExec);
-            for (S3ObjectSummary s : ol.getObjectSummaries()) {
-                if (s.getStorageClass().equals(StorageClass.Glacier.toString())) {
-                    if (skipGlacierObjects) {
-                        Exec.getLogger("AbstractS3FileInputPlugin.class").warn("Skipped \"s3://{}/{}\" that stored at Glacier.", bucketName, s.getKey());
-                        continue;
-                    }
-                    else {
-                        throw new ConfigException("Detected an object stored at Glacier. Set \"skip_glacier_objects\" option to \"true\" to skip this.");
-                    }
-                }
-                if (s.getSize() > 0) {
-                    builder.add(s.getKey(), s.getSize());
-                    if (!builder.needsMore()) {
-                        LOGGER.warn("Too many files matched, stop listing file");
-                        return;
-                    }
-                }
-            }
-            lastKey = ol.getNextMarker();
-        } while (lastKey != null);
     }
 
     @Override
@@ -437,6 +388,14 @@ public abstract class AbstractS3FileInputPlugin
         @Override
         public void close()
         {
+        }
+    }
+
+    @VisibleForTesting
+    static void errorIfInternalParamsAreSet(PluginTask task)
+    {
+        if (task.getEndModifiedTime().isPresent()) {
+            throw new ConfigException("'__end_modified_time' must not be set.");
         }
     }
 

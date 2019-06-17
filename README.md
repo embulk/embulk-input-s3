@@ -81,9 +81,18 @@ embulk-input-s3 v0.3.0+ requires Embulk v0.9.12+
 
 * **min_task_size** (experimental): minimum bytesize of a task. If this is larger than 0, one task includes multiple input files up until it becomes the bytesize in total. This is useful if too many number of tasks impacts performance of output or executor plugins badly. (integer, optional)
 
-* **incremental**: enables incremental loading. If incremental loading is enabled, config diff for the next execution will include `last_path` parameter so that next execution skips files before the path. Otherwise, `last_path` will not be included.
+* **use_modified_time**: use last modified time to filter files to read if enabled, otherwise last path is used (boolean, optional, default false)
+
+* **last_modified_time**: files are read if it is modified after that time. Timezone is UTC. If this parameter is empty, read all files. Timestamp format: `yyyy-MM-dd'T'HH:mm:ss.SSSZ` (string, optional)
+
+* **last_path**: files are read if path is after that `last_path` in lexicographical order (string, optional, default empty)
+
+* **incremental**: enables incremental loading. If incremental loading is enabled, config diff for the next execution will include:
+  * `last_modified_time` if `use_modified_time` is enabled, the next execution skips files before the modified time
+  * `last_path` if `use_modified_time` is disabled, the next execution skips files before the path.
 
 * **skip_glacier_objects**: if true, skip processing objects stored in Amazon Glacier (boolean, default false)
+
 
 ## Example
 
