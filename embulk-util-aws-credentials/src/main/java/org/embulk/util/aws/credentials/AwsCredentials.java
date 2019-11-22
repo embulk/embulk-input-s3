@@ -117,8 +117,6 @@ public abstract class AwsCredentials
                 else {
                     provider = new ProfileCredentialsProvider(profileName);
                 }
-                task.setProfileName(Optional.empty());
-                task.setProfileFile(Optional.empty());
 
                 return overwriteBasicCredentials(task, provider.getCredentials());
             }
@@ -189,9 +187,6 @@ public abstract class AwsCredentials
 
     private static AWSCredentialsProvider overwriteBasicCredentials(AwsCredentialsConfig task, final AWSCredentials creds)
     {
-        task.setAuthMethod("basic");
-        task.setAccessKeyId(Optional.of(creds.getAWSAccessKeyId()));
-        task.setSecretAccessKey(Optional.of(creds.getAWSSecretKey()));
         return new AWSCredentialsProvider() {
             public AWSCredentials getCredentials()
             {
