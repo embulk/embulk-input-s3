@@ -2,8 +2,9 @@ package org.embulk.input.s3.utils;
 
 import com.google.common.base.Joiner;
 import org.embulk.config.ConfigException;
-import org.joda.time.format.DateTimeFormat;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
@@ -14,8 +15,9 @@ public class DateUtils
     {
         for (final String fmt : supportedFormats) {
             try {
-                return DateTimeFormat.forPattern(fmt).parseDateTime(value).toDate();
-            } catch (final IllegalArgumentException e) {
+                return new SimpleDateFormat(fmt).parse(value);
+            }
+            catch (final ParseException | IllegalArgumentException | NullPointerException e) {
                 // ignorable exception
             }
         }
