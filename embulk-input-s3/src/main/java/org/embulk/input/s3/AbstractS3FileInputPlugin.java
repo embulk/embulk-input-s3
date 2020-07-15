@@ -23,7 +23,6 @@ import org.embulk.config.TaskSource;
 import org.embulk.input.s3.explorer.S3NameOrderPrefixFileExplorer;
 import org.embulk.input.s3.explorer.S3SingleFileExplorer;
 import org.embulk.input.s3.explorer.S3TimeOrderPrefixFileExplorer;
-import org.embulk.input.s3.utils.DateUtils;
 import org.embulk.spi.BufferAllocator;
 import org.embulk.spi.Exec;
 import org.embulk.spi.FileInputPlugin;
@@ -38,8 +37,8 @@ import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
@@ -285,7 +284,7 @@ public abstract class AbstractS3FileInputPlugin
             if (task.getUseModifiedTime()) {
                 Date now = new Date();
                 Optional<Date> from = task.getLastModifiedTime().isPresent()
-                        ? Optional.of(DateUtils.parse(task.getLastModifiedTime().get(), Collections.singletonList(FULL_DATE_FORMAT)))
+                        ? Optional.of(parseDate(task.getLastModifiedTime().get()))
                         : Optional.empty();
                 task.setEndModifiedTime(Optional.of(now));
 
@@ -317,6 +316,15 @@ public abstract class AbstractS3FileInputPlugin
     {
         if (!task.getPathPrefix().isPresent() && !task.getPath().isPresent()) {
             throw new ConfigException("Either path or path_prefix is required");
+        }
+    }
+
+    private Date parseDate(final String value) {
+        try {
+            return new SimpleDateFormat(FULL_DATE_FORMAT).parse(value);
+        }
+        catch (final ParseException e) {
+            throw new ConfigException("Unsupported DateTime value: '" + value + "', supported formats: [" + FULL_DATE_FORMAT + "]");
         }
     }
 
