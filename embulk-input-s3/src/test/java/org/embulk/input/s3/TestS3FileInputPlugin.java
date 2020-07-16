@@ -6,6 +6,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.embulk.EmbulkTestRuntime;
 import org.embulk.config.ConfigDiff;
+import org.embulk.config.ConfigException;
 import org.embulk.config.ConfigSource;
 import org.embulk.config.TaskReport;
 import org.embulk.config.TaskSource;
@@ -21,7 +22,10 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import static org.embulk.input.s3.S3FileInputPlugin.S3PluginTask;
@@ -210,6 +214,27 @@ public class TestS3FileInputPlugin
         // the S3 client should not eagerly resolves for a specific region on client side.
         // Please refer to org.embulk.input.s3.S3FileInputPlugin#newS3Client for the details.
         assertEquals(s3Client.getRegion(), Region.US_Standard);
+    }
+
+    @Test
+    public void testParseDate() throws ParseException {
+        final S3FileInputPlugin plugin = runtime.getInstance(S3FileInputPlugin.class);
+        final Date expectedDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2011-12-03 10:15:30");
+        assertEquals(expectedDate, plugin.parseDate("2011-12-03T10:15:30.000Z"));
+    }
+
+    @Test(expected = ConfigException.class)
+    public void testNoMilliseconds()
+    {
+        final S3FileInputPlugin plugin = runtime.getInstance(S3FileInputPlugin.class);
+        plugin.parseDate("2011-12-03T10:15:30Z");
+    }
+
+    @Test(expected = ConfigException.class)
+    public void testOffsetNotSet()
+    {
+        final S3FileInputPlugin plugin = runtime.getInstance(S3FileInputPlugin.class);
+        plugin.parseDate("2011-12-03T10:15:30.000");
     }
 
     static class Control

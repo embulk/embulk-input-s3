@@ -319,7 +319,7 @@ public abstract class AbstractS3FileInputPlugin
         }
     }
 
-    private Date parseDate(final String value) {
+    Date parseDate(final String value) {
         try {
             return new SimpleDateFormat(FULL_DATE_FORMAT).parse(value);
         }
