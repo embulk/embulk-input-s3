@@ -3,7 +3,6 @@ package org.embulk.input.s3.explorer;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.GetObjectMetadataRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.embulk.EmbulkTestRuntime;
 import org.embulk.input.s3.FileList;
 import org.junit.Before;
@@ -23,7 +22,6 @@ public class TestS3SingleFileExplorer
     private static final String PATH = "path";
     private static final String BUCKET_NAME = "bucket_name";
 
-    @SuppressFBWarnings("URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD")
     @Rule
     public EmbulkTestRuntime embulkTestRuntime = new EmbulkTestRuntime();
 
