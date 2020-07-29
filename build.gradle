@@ -94,6 +94,30 @@ subprojects {
                             name = "Sadayuki Furuhashi"
                             email = "frsyuki@gmail.com"
                         }
+                        developer {
+                            name = "Muga Nishizawa"
+                            email = "muga.nishizawa@gmail.com"
+                        }
+                        developer {
+                            name = "Huy Le"
+                            email = "huy.lenq@gmail.com"
+                        }
+                        developer {
+                            name = "Satoshi Akama"
+                            email = "satoshiakama@gmail.com"
+                        }
+                        developer {
+                            name = "Trung Huynh"
+                            email = "httrung90@gmail.com"
+                        }
+                        developer {
+                            name = "Serhii Himadieiev"
+                            email = "gimadeevsv@gmail.com"
+                        }
+                        developer {
+                            name = "Dai MIKURUBE"
+                            email = "dmikurube@treasure-data.com"
+                        }
                     }
 
                     scm {
