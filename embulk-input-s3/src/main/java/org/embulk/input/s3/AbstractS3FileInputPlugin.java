@@ -14,7 +14,6 @@ import org.embulk.config.Config;
 import org.embulk.config.ConfigDefault;
 import org.embulk.config.ConfigDiff;
 import org.embulk.config.ConfigException;
-import org.embulk.config.ConfigInject;
 import org.embulk.config.ConfigSource;
 import org.embulk.config.Task;
 import org.embulk.config.TaskReport;
@@ -117,9 +116,6 @@ public abstract class AbstractS3FileInputPlugin
         Optional<Date> getEndModifiedTime();
 
         void setEndModifiedTime(Optional<Date> endModifiedTime);
-
-        @ConfigInject
-        BufferAllocator getBufferAllocator();
     }
 
     protected abstract Class<? extends PluginTask> getTaskClass();
@@ -380,7 +376,7 @@ public abstract class AbstractS3FileInputPlugin
     {
         public S3FileInput(PluginTask task, int taskIndex)
         {
-            super(task.getBufferAllocator(), new SingleFileProvider(task, taskIndex));
+            super(Exec.getBufferAllocator(), new SingleFileProvider(task, taskIndex));
         }
 
         public void abort()
