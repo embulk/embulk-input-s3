@@ -2,8 +2,6 @@ package org.embulk.input.s3;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.Region;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import org.embulk.EmbulkTestRuntime;
 import org.embulk.config.ConfigDiff;
 import org.embulk.config.ConfigException;
@@ -26,7 +24,9 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.embulk.input.s3.S3FileInputPlugin.S3PluginTask;
 import static org.junit.Assert.assertEquals;
@@ -260,9 +260,9 @@ public class TestS3FileInputPlugin
         }
     }
 
-    static ImmutableMap<String, Object> parserConfig(ImmutableList<Object> schemaConfig)
+    static Map<String, Object> parserConfig(List<Object> schemaConfig)
     {
-        ImmutableMap.Builder<String, Object> builder = new ImmutableMap.Builder<>();
+        final HashMap<String, Object> builder = new HashMap<>();
         builder.put("type", "csv");
         builder.put("newline", "CRLF");
         builder.put("delimiter", ",");
@@ -273,22 +273,33 @@ public class TestS3FileInputPlugin
         builder.put("allow_extra_columns", false);
         builder.put("allow_optional_columns", false);
         builder.put("columns", schemaConfig);
-        return builder.build();
+        return builder;
     }
 
-    static ImmutableList<Object> schemaConfig()
+    static List<Object> schemaConfig()
     {
-        ImmutableList.Builder<Object> builder = new ImmutableList.Builder<>();
-        builder.add(ImmutableMap.of("name", "timestamp", "type", "timestamp", "format", "%Y-%m-%d %H:%M:%S"));
-        builder.add(ImmutableMap.of("name", "host", "type", "string"));
-        builder.add(ImmutableMap.of("name", "path", "type", "string"));
-        builder.add(ImmutableMap.of("name", "method", "type", "string"));
-        builder.add(ImmutableMap.of("name", "referer", "type", "string"));
-        builder.add(ImmutableMap.of("name", "code", "type", "long"));
-        builder.add(ImmutableMap.of("name", "agent", "type", "string"));
-        builder.add(ImmutableMap.of("name", "user", "type", "string"));
-        builder.add(ImmutableMap.of("name", "size", "type", "long"));
-        return builder.build();
+        final ArrayList<Object> builder = new ArrayList<>();
+        builder.add(mapOf("name", "timestamp", "type", "timestamp", "format", "%Y-%m-%d %H:%M:%S"));
+        builder.add(mapOf("name", "host", "type", "string"));
+        builder.add(mapOf("name", "path", "type", "string"));
+        builder.add(mapOf("name", "method", "type", "string"));
+        builder.add(mapOf("name", "referer", "type", "string"));
+        builder.add(mapOf("name", "code", "type", "long"));
+        builder.add(mapOf("name", "agent", "type", "string"));
+        builder.add(mapOf("name", "user", "type", "string"));
+        builder.add(mapOf("name", "size", "type", "long"));
+        return builder;
+    }
+
+    static Map<String, String> mapOf(final String... args) {
+        final HashMap<String, String> map = new HashMap<>();
+        if (args.length % 2 != 0) {
+            throw new RuntimeException("Unexpected mapOf.");
+        }
+        for (int i = 0; i < args.length; i += 2) {
+            map.put(args[i], args[i + 1]);
+        }
+        return map;
     }
 
     static void assertRecords(ConfigSource config, MockPageOutput output)

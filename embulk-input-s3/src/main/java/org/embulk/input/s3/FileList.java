@@ -3,7 +3,6 @@ package org.embulk.input.s3;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Throwables;
 
 import org.embulk.config.Config;
 import org.embulk.config.ConfigDefault;
@@ -109,7 +108,7 @@ public class FileList
                 stream = new BufferedOutputStream(new GZIPOutputStream(binary));
             }
             catch (IOException ex) {
-                throw Throwables.propagate(ex);
+                throw new RuntimeException(ex);
             }
         }
 
@@ -164,7 +163,7 @@ public class FileList
                 stream.write(data);
             }
             catch (IOException ex) {
-                throw Throwables.propagate(ex);
+                throw new RuntimeException(ex);
             }
 
             last = path;
@@ -177,7 +176,7 @@ public class FileList
                 stream.close();
             }
             catch (IOException ex) {
-                throw Throwables.propagate(ex);
+                throw new RuntimeException(ex);
             }
             return new FileList(binary.toByteArray(), getSplits(entries), Optional.ofNullable(last));
         }
@@ -279,7 +278,7 @@ public class FileList
                 this.stream = new BufferedInputStream(new GZIPInputStream(new ByteArrayInputStream(data)));
             }
             catch (IOException ex) {
-                throw Throwables.propagate(ex);
+                throw new RuntimeException(ex);
             }
             this.current = 0;
         }
@@ -295,7 +294,7 @@ public class FileList
                     stream = new BufferedInputStream(new GZIPInputStream(new ByteArrayInputStream(data)));
                 }
                 catch (IOException ex) {
-                    throw Throwables.propagate(ex);
+                    throw new RuntimeException(ex);
                 }
                 current = 0;
             }
@@ -326,7 +325,7 @@ public class FileList
                 return b;
             }
             catch (IOException ex) {
-                throw Throwables.propagate(ex);
+                throw new RuntimeException(ex);
             }
         }
 
