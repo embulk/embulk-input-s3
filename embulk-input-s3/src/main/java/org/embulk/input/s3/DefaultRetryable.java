@@ -3,9 +3,9 @@ package org.embulk.input.s3;
 import com.amazonaws.AmazonServiceException;
 import com.google.common.base.Throwables;
 import org.apache.http.HttpStatus;
-import org.embulk.spi.Exec;
 import org.embulk.spi.util.RetryExecutor;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -21,7 +21,7 @@ import static org.embulk.spi.util.RetryExecutor.Retryable;
  */
 public class DefaultRetryable<T> implements Retryable<T>
 {
-    private static final Logger log = Exec.getLogger(DefaultRetryable.class);
+    private static final Logger log = LoggerFactory.getLogger(DefaultRetryable.class);
     private static final Set<Integer> NONRETRYABLE_STATUS_CODES = new HashSet<Integer>(2);
     private static final Set<String> NONRETRYABLE_ERROR_CODES = new HashSet<String>(1);
     private String operationName;

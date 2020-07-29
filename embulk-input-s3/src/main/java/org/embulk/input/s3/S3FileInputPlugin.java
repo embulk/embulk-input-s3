@@ -5,8 +5,8 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import org.embulk.config.Config;
 import org.embulk.config.ConfigDefault;
-import org.embulk.spi.Exec;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 
@@ -25,7 +25,7 @@ public class S3FileInputPlugin
         Optional<String> getRegion();
     }
 
-    private static final Logger log = Exec.getLogger(S3FileInputPlugin.class);
+    private static final Logger log = LoggerFactory.getLogger(S3FileInputPlugin.class);
 
     @Override
     protected Class<? extends PluginTask> getTaskClass()

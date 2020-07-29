@@ -34,6 +34,7 @@ import org.embulk.spi.util.RetryExecutor;
 import org.embulk.util.aws.credentials.AwsCredentials;
 import org.embulk.util.aws.credentials.AwsCredentialsTask;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -50,7 +51,7 @@ import static org.embulk.spi.util.RetryExecutor.retryExecutor;
 public abstract class AbstractS3FileInputPlugin
         implements FileInputPlugin
 {
-    private static final Logger LOGGER = Exec.getLogger(S3FileInputPlugin.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(S3FileInputPlugin.class);
     private static final String FULL_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
 
     public interface PluginTask
@@ -339,7 +340,7 @@ public abstract class AbstractS3FileInputPlugin
     static class S3InputStreamReopener
             implements ResumableInputStream.Reopener
     {
-        private final Logger log = Exec.getLogger(S3InputStreamReopener.class);
+        private static final Logger log = LoggerFactory.getLogger(S3InputStreamReopener.class);
 
         private final AmazonS3 client;
         private final GetObjectRequest request;
