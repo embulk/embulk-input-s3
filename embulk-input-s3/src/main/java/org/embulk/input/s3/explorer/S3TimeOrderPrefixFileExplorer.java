@@ -6,9 +6,9 @@ import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import org.apache.commons.lang3.StringUtils;
 import org.embulk.input.s3.DefaultRetryable;
-import org.embulk.spi.Exec;
 import org.embulk.spi.util.RetryExecutor;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 import java.util.List;
@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 
 public class S3TimeOrderPrefixFileExplorer extends S3PrefixFileExplorer
 {
-    private static final Logger LOGGER = Exec.getLogger(S3TimeOrderPrefixFileExplorer.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(S3TimeOrderPrefixFileExplorer.class);
 
     private final Optional<Date> from;
     private final Date to;

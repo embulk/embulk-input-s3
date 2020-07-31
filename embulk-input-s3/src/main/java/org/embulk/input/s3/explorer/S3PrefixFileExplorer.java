@@ -5,15 +5,15 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.services.s3.model.StorageClass;
 import org.embulk.config.ConfigException;
 import org.embulk.input.s3.FileList;
-import org.embulk.spi.Exec;
 import org.embulk.spi.util.RetryExecutor;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
 public abstract class S3PrefixFileExplorer extends S3FileExplorer
 {
-    private static final Logger LOGGER = Exec.getLogger(S3PrefixFileExplorer.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(S3PrefixFileExplorer.class);
 
     protected String pathPrefix;
 
