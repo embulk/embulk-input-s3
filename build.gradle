@@ -1,19 +1,35 @@
 plugins {
-    id "com.jfrog.bintray" version "1.7"
-    id "com.github.jruby-gradle.base" version "0.1.5"
+    id "com.jfrog.bintray" version "1.8.4"
     id "java"
+    id "maven-publish"
+    id "jacoco"
     id "checkstyle"
+    id "org.embulk.embulk-plugins" version "0.4.2" apply false
 }
-import com.github.jrubygradle.JRubyExec
+
+group = "org.embulk.input.s3"
+version = "0.4.0-SNAPSHOT"
 
 allprojects {
-    group = 'org.embulk.input.s3'
-    version = '0.3.5'
+    apply plugin: "java"
 
-    apply plugin: 'com.jfrog.bintray'
-    apply plugin: 'maven-publish'
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
 
-    // bintray
+    tasks.withType(JavaCompile) {
+        options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
+        options.encoding = "UTF-8"
+    }
+
+    java {
+        withJavadocJar()
+        withSourcesJar()
+    }
+}
+
+subprojects {
+    apply plugin: "com.jfrog.bintray"
+
     bintray {
         // write at your bintray user name and api key to ~/.gradle/gradle.properties file:
         user = project.hasProperty('bintray_user') ? bintray_user : ''
@@ -26,7 +42,7 @@ allprojects {
             userOrg = 'embulk-input-s3'
             repo = 'maven'
             name = project.name
-            desc = 'S3 file input plugin for Embulk'
+            desc = project.description
             websiteUrl = 'https://github.com/embulk/embulk-input-s3'
             issueTrackerUrl = 'https://github.com/embulk/embulk-input-s3/issues'
             vcsUrl = 'https://github.com/embulk/embulk-input-s3.git'
@@ -42,94 +58,56 @@ allprojects {
 }
 
 subprojects {
-    apply plugin: 'maven'  // install jar files to the local repo: $ gradle install
-    apply plugin: 'java'
-    //apply plugin: 'findbugs'
-    apply plugin: 'jacoco'
-    apply plugin: 'checkstyle'
-    apply plugin: 'com.github.jruby-gradle.base'
+    // embulk-input-s3, embulk-input-riak_cs
+    apply plugin: "maven-publish"
+    apply plugin: "org.embulk.embulk-plugins"
 
-    repositories {
-        mavenCentral()
-        jcenter()
-    }
-
-    configurations {
-        provided
-        compile.exclude group: 'commons-logging', module: 'commons-logging'   // commons-logging api is provided by jcl-over-slf4j
-    }
-
-    sourceCompatibility = 1.8
-    targetCompatibility = 1.8
-
-    dependencies {
-        compile  "org.embulk:embulk-core:0.9.12"
-        provided "org.embulk:embulk-core:0.9.12"
-        compile "com.amazonaws:aws-java-sdk-s3:1.11.466"
-        compile "com.amazonaws:aws-java-sdk-sts:1.11.466"
-        runtime "org.slf4j:jcl-over-slf4j:1.7.12"  // aws-sdk uses Apache Commons Logging and Embulk uses slf4j
-        testCompile "junit:junit:4.+"
-        testCompile "org.mockito:mockito-core:1.+"
-        testCompile "org.embulk:embulk-standards:0.9.12"
-        testCompile "org.embulk:embulk-core:0.9.12:tests"
-    }
-
-    gradle.projectsEvaluated {
-        tasks.withType(JavaCompile) {
-            options.compilerArgs << "-Xlint:unchecked" //<< "-Xlint:deprecation"
-        }
-    }
-
-    task classpath(type: Copy, dependsOn: ["jar"]) {
-        doFirst { file('classpath').deleteDir() }
-        from (configurations.runtime - configurations.provided + files(jar.archivePath))
-        into 'classpath'
-    }
-    clean { delete 'classpath' }
-
-    if (![project(":embulk-util-aws-credentials")].contains(project)) {
-        task gem(type: JRubyExec, dependsOn: ['build', 'gemspec', 'classpath']) {
-            jrubyArgs '-rrubygems/gem_runner', "-eGem::GemRunner.new.run(ARGV)", 'build'
-            script "${project.projectDir.absolutePath}/build/gemspec"
-            doLast { ant.move(file: "${project.name}-${project.version}.gem", todir: "${parent.projectDir}/pkg") }
-        }
-    }
-
-    // publishing
     publishing {
         publications {
              mavenJava(MavenPublication) {
+                groupId = "${project.group}"
+                artifactId = "${project.name}"
+
                  from components.java
-                 artifact testsJar
-                 artifact sourcesJar
-                 artifact javadocJar
-                 pom.withXml {
-                     asNode().dependencies.dependency.findAll() {
-                         it.scope.text() == 'runtime' && project.configurations.compile.allDependencies.find { dep ->
-                             dep.name == it.artifactId.text()
-                         }
-                     }.each() {
-                         it.scope*.value = 'compile'
-                     }
-                 }
-             }
+                 // javadocJar and sourcesJar are added by java.withJavadocJar() and java.withSourcesJar() above.
+                 // See: https://docs.gradle.org/current/javadoc/org/gradle/api/plugins/JavaPluginExtension.html
+
+                pom {  // https://central.sonatype.org/pages/requirements.html
+                    packaging "jar"
+
+                    name = "${project.name}"
+                    afterEvaluate { project ->
+                        description = "${project.description}"
+                    }
+                    url = "https://www.embulk.org/"
+
+                    licenses {
+                        license {
+                            // http://central.sonatype.org/pages/requirements.html#license-information
+                            name = "The Apache License, Version 2.0"
+                            url = "https://www.apache.org/licenses/LICENSE-2.0.txt"
+                        }
+                    }
+
+                    developers {
+                        developer {
+                            name = "Sadayuki Furuhashi"
+                            email = "frsyuki@gmail.com"
+                        }
+                    }
+
+                    scm {
+                        connection = "scm:git:git://github.com/embulk/embulk-input-s3.git"
+                        developerConnection = "scm:git:git@github.com:embulk/embulk-input-s3.git"
+                        url = "https://github.com/embulk/embulk-input-s3"
+                    }
+                }
+            }
         }
     }
-    // add tests/javadoc/source jar tasks as artifacts to be released
-    task testsJar(type: Jar, dependsOn: classes) {
-        classifier = 'tests'
-        from sourceSets.test.output
-    }
-    task sourcesJar(type: Jar, dependsOn: classes) {
-        classifier = 'sources'
-        from sourceSets.main.allSource
-    }
-    task javadocJar(type: Jar, dependsOn: javadoc) {
-        classifier = 'javadoc'
-        from javadoc.destinationDir
-    }
-    artifacts {
-        archives testsJar, sourcesJar, javadocJar
+
+    gemPush {
+        host = "https://rubygems.org"
     }
 
     checkstyle {
@@ -149,9 +127,3 @@ subprojects {
         source = sourceSets.main.allJava + sourceSets.test.allJava
     }
 }
-
-task gemPush << {
-    "gem push pkg/embulk-input-s3-${project.version}.gem".execute().waitFor()
-    "gem push pkg/embulk-input-riak_cs-${project.version}.gem".execute().waitFor()
-}
-
