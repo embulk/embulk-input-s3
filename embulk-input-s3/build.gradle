@@ -92,8 +92,24 @@ embulkPlugin {
 }
 
 gem {
-    authors = [ "Sadayuki Furuhashi" ]
-    email = [ "frsyuki@gmail.com" ]
+    authors = [
+        "Sadayuki Furuhashi",
+        "Muga Nishizawa",
+        "Huy Le",
+        "Satoshi Akama",
+        "Trung Huynh",
+        "Serhii Himadieiev",
+        "Dai MIKURUBE",
+    ]
+    email = [
+        "frsyuki@gmail.com",
+        "muga.nishizawa@gmail.com",
+        "huy.lenq@gmail.com",
+        "satoshiakama@gmail.com",
+        "httrung90@gmail.com",
+        "gimadeevsv@gmail.com",
+        "dmikurube@treasure-data.com",
+    ]
     summary = "S3 file input plugin for Embulk"
     homepage = "https://github.com/embulk/embulk-input-s3"
     licenses = [ "Apache-2.0" ]
