@@ -62,6 +62,25 @@ subprojects {
     apply plugin: "maven-publish"
     apply plugin: "org.embulk.embulk-plugins"
 
+    test {
+        testLogging {
+            outputs.upToDateWhen { false }
+            showStandardStreams = true
+        }
+    }
+
+    jar {
+        from rootProject.file("LICENSE")
+    }
+
+    sourcesJar {
+        from rootProject.file("LICENSE")
+    }
+
+    javadocJar {
+        from rootProject.file("LICENSE")
+    }
+
     publishing {
         publications {
              mavenJava(MavenPublication) {
