@@ -10,7 +10,6 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
-import com.google.common.annotations.VisibleForTesting;
 import org.embulk.config.Config;
 import org.embulk.config.ConfigDefault;
 import org.embulk.config.ConfigDiff;
@@ -336,7 +335,6 @@ public abstract class AbstractS3FileInputPlugin
         return new S3FileInput(task, taskIndex);
     }
 
-    @VisibleForTesting
     static class S3InputStreamReopener
             implements ResumableInputStream.Reopener
     {
@@ -400,7 +398,6 @@ public abstract class AbstractS3FileInputPlugin
         }
     }
 
-    @VisibleForTesting
     static void errorIfInternalParamsAreSet(PluginTask task)
     {
         if (task.getEndModifiedTime().isPresent()) {

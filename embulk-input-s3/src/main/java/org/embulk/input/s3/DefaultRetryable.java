@@ -1,7 +1,6 @@
 package org.embulk.input.s3;
 
 import com.amazonaws.AmazonServiceException;
-import com.google.common.base.Throwables;
 import org.apache.http.HttpStatus;
 import org.embulk.spi.util.RetryExecutor;
 import org.slf4j.Logger;
@@ -122,7 +121,10 @@ public class DefaultRetryable<T> implements Retryable<T>
                 return this.call();
             }
             catch (Exception e) {
-                Throwables.propagate(e);
+                if (e instanceof RuntimeException) {
+                    throw (RuntimeException) e;
+                }
+                throw new RuntimeException(e);
             }
         }
 
@@ -130,10 +132,14 @@ public class DefaultRetryable<T> implements Retryable<T>
             return executor.runInterruptible(this);
         }
         catch (RetryGiveupException e) {
-            throw Throwables.propagate(e.getCause());
+            final Exception cause = e.getCause();
+            if (cause instanceof RuntimeException) {
+                throw (RuntimeException) cause;
+            }
+            throw new RuntimeException(cause);
         }
         catch (InterruptedException e) {
-            throw Throwables.propagate(e);
+            throw new RuntimeException(e);
         }
     }
 
@@ -156,7 +162,10 @@ public class DefaultRetryable<T> implements Retryable<T>
                 return this.call();
             }
             catch (Exception e) {
-                Throwables.propagate(e);
+                if (e instanceof RuntimeException) {
+                    throw (RuntimeException) e;
+                }
+                throw new RuntimeException(e);
             }
         }
 
@@ -164,11 +173,19 @@ public class DefaultRetryable<T> implements Retryable<T>
             return executor.runInterruptible(this);
         }
         catch (RetryGiveupException e) {
-            Throwables.propagateIfInstanceOf(e.getCause(), propagateAsIsException);
-            throw Throwables.propagate(e.getCause());
+            final Exception cause = e.getCause();
+            if (cause != null) {
+                if (propagateAsIsException.isInstance(cause)) {
+                    throw propagateAsIsException.cast(cause);
+                }
+            }
+            if (cause instanceof RuntimeException) {
+                throw (RuntimeException) cause;
+            }
+            throw new RuntimeException(cause);
         }
         catch (InterruptedException e) {
-            throw Throwables.propagate(e);
+            throw new RuntimeException(e);
         }
     }
 }
