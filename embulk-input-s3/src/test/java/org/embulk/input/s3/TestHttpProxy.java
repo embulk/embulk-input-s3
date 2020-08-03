@@ -19,6 +19,9 @@ package org.embulk.input.s3;
 import org.embulk.EmbulkTestRuntime;
 import org.embulk.config.ConfigSource;
 import org.embulk.input.s3.S3FileInputPlugin.S3PluginTask;
+import org.embulk.util.config.ConfigMapper;
+import org.embulk.util.config.ConfigMapperFactory;
+import org.embulk.util.config.TaskMapper;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -47,17 +50,19 @@ public class TestHttpProxy
     {
         ConfigSource conf = config.deepCopy();
         setupS3Config(conf);
-        S3PluginTask task = conf.loadConfig(S3PluginTask.class);
+        final ConfigMapper configMapper = CONFIG_MAPPER_FACTORY.createConfigMapper();
+        final S3PluginTask task = configMapper.map(config, S3PluginTask.class);
         assertTrue(!task.getHttpProxy().isPresent());
     }
 
     @Test
     public void checkHttpProxy()
     {
+        final ConfigMapper configMapper = CONFIG_MAPPER_FACTORY.createConfigMapper();
         { // specify host
             String host = "my_host";
             ConfigSource conf = config.deepCopy().set("host", host);
-            HttpProxy httpProxy = conf.loadConfig(HttpProxy.class);
+            final HttpProxy httpProxy = configMapper.map(conf, HttpProxy.class);
             assertHttpProxy(host, Optional.empty(), true, Optional.empty(), Optional.empty(),
                     httpProxy);
         }
@@ -67,7 +72,7 @@ public class TestHttpProxy
             ConfigSource conf = config.deepCopy()
                     .set("host", host)
                     .set("https", true);
-            HttpProxy httpProxy = conf.loadConfig(HttpProxy.class);
+            final HttpProxy httpProxy = configMapper.map(conf, HttpProxy.class);
             assertHttpProxy(host, Optional.empty(), true, Optional.empty(), Optional.empty(),
                     httpProxy);
         }
@@ -77,7 +82,7 @@ public class TestHttpProxy
             ConfigSource conf = config.deepCopy()
                     .set("host", host)
                     .set("https", false);
-            HttpProxy httpProxy = conf.loadConfig(HttpProxy.class);
+            final HttpProxy httpProxy = configMapper.map(conf, HttpProxy.class);
             assertHttpProxy(host, Optional.empty(), false, Optional.empty(), Optional.empty(),
                     httpProxy);
         }
@@ -88,7 +93,7 @@ public class TestHttpProxy
             ConfigSource conf = config.deepCopy()
                     .set("host", host)
                     .set("port", port);
-            HttpProxy httpProxy = conf.loadConfig(HttpProxy.class);
+            final HttpProxy httpProxy = configMapper.map(conf, HttpProxy.class);
             assertHttpProxy(host, Optional.of(port), true, Optional.empty(), Optional.empty(),
                     httpProxy);
         }
@@ -103,7 +108,7 @@ public class TestHttpProxy
                     .set("port", port)
                     .set("user", user)
                     .set("password", password);
-            HttpProxy httpProxy = conf.loadConfig(HttpProxy.class);
+            final HttpProxy httpProxy = configMapper.map(conf, HttpProxy.class);
             assertHttpProxy(host, Optional.of(port), true, Optional.of(user), Optional.of(password),
                     httpProxy);
         }
@@ -134,4 +139,6 @@ public class TestHttpProxy
             assertEquals(password.get(), actual.getPassword().get());
         }
     }
+
+    private static final ConfigMapperFactory CONFIG_MAPPER_FACTORY = ConfigMapperFactory.builder().addDefaultModules().build();
 }

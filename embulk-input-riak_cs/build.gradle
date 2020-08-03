@@ -7,9 +7,6 @@ description = "Reads files stored on Riak CS"
 repositories {
     mavenCentral()
     jcenter()
-    maven {
-        url "https://dl.bintray.com/embulk-input-s3/maven"
-    }
 }
 
 dependencies {

@@ -19,6 +19,9 @@ package org.embulk.input.riak_cs;
 import org.embulk.EmbulkTestRuntime;
 import org.embulk.config.ConfigSource;
 import org.embulk.input.s3.AbstractS3FileInputPlugin.PluginTask;
+import org.embulk.util.config.ConfigMapper;
+import org.embulk.util.config.ConfigMapperFactory;
+import org.embulk.util.config.TaskMapper;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -45,7 +48,10 @@ public class TestRiakCsFileInputPlugin
                 .set("path_prefix", "my_path_prefix")
                 .set("access_key_id", "my_access_key_id")
                 .set("secret_access_key", "my_secret_access_key");
-        PluginTask task = config.loadConfig(plugin.getTaskClass());
+        final ConfigMapper configMapper = CONFIG_MAPPER_FACTORY.createConfigMapper();
+        final PluginTask task = configMapper.map(config, plugin.getTaskClass());
         plugin.newS3Client(task);
     }
+
+    private static final ConfigMapperFactory CONFIG_MAPPER_FACTORY = ConfigMapperFactory.builder().addDefaultModules().build();
 }

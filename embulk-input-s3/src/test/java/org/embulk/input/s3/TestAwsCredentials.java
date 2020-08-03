@@ -33,13 +33,17 @@ import org.embulk.config.ConfigDiff;
 import org.embulk.config.ConfigSource;
 import org.embulk.input.s3.TestS3FileInputPlugin.Control;
 import org.embulk.spi.FileInputRunner;
+import org.embulk.spi.Schema;
 import org.embulk.spi.TestPageBuilderReader;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.List;
+
 import static org.embulk.input.s3.TestS3FileInputPlugin.assertRecords;
+import static org.embulk.input.s3.TestS3FileInputPlugin.buildSchema;
 import static org.embulk.input.s3.TestS3FileInputPlugin.parserConfig;
 import static org.embulk.input.s3.TestS3FileInputPlugin.schemaConfig;
 import static org.junit.Assert.assertEquals;
@@ -72,17 +76,20 @@ public class TestAwsCredentials
     public EmbulkTestRuntime runtime = new EmbulkTestRuntime();
 
     private ConfigSource config;
+    private Schema configSchema;
     private FileInputRunner runner;
     private TestPageBuilderReader.MockPageOutput output;
 
     @Before
     public void createResources()
     {
+        final List<Object> schemaConfig = schemaConfig();
         config = runtime.getExec().newConfigSource()
                 .set("type", "s3")
                 .set("bucket", EMBULK_S3_TEST_BUCKET)
                 .set("path_prefix", EMBULK_S3_TEST_PATH_PREFIX)
-                .set("parser", parserConfig(schemaConfig()));
+                .set("parser", parserConfig(schemaConfig));
+        configSchema = buildSchema(schemaConfig);
         runner = new FileInputRunner(runtime.getInstance(S3FileInputPlugin.class));
         output = new TestPageBuilderReader.MockPageOutput();
     }
@@ -92,7 +99,7 @@ public class TestAwsCredentials
         ConfigDiff configDiff = runner.transaction(config, new Control(runner, output));
 
         assertEquals(EMBULK_S3_TEST_PATH_PREFIX + "/sample_01.csv", configDiff.get(String.class, "last_path"));
-        assertRecords(config, output);
+        assertRecords(configSchema, output);
     }
 
     @Test

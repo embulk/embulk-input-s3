@@ -18,7 +18,7 @@ package org.embulk.input.riak_cs;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.services.s3.AmazonS3;
-import org.embulk.config.Config;
+import org.embulk.util.config.Config;
 import org.embulk.input.s3.AbstractS3FileInputPlugin;
 
 import static com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
