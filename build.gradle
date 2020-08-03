@@ -84,8 +84,10 @@ subprojects {
     publishing {
         publications {
              mavenJava(MavenPublication) {
-                groupId = "${project.group}"
-                artifactId = "${project.name}"
+                afterEvaluate { project ->
+                    groupId = "${project.group}"
+                    artifactId = "${project.name}"
+                }
 
                  from components.java
                  // javadocJar and sourcesJar are added by java.withJavadocJar() and java.withSourcesJar() above.
@@ -94,8 +96,8 @@ subprojects {
                 pom {  // https://central.sonatype.org/pages/requirements.html
                     packaging "jar"
 
-                    name = "${project.name}"
                     afterEvaluate { project ->
+                        name = "${project.name}"
                         description = "${project.description}"
                     }
                     url = "https://www.embulk.org/"
