@@ -41,8 +41,10 @@ subprojects {
         pkg {
             userOrg = 'embulk-input-s3'
             repo = 'maven'
-            name = project.name
-            desc = project.description
+            afterEvaluate {
+                name = project.name
+                desc = project.description
+            }
             websiteUrl = 'https://github.com/embulk/embulk-input-s3'
             issueTrackerUrl = 'https://github.com/embulk/embulk-input-s3/issues'
             vcsUrl = 'https://github.com/embulk/embulk-input-s3.git'
@@ -50,8 +52,10 @@ subprojects {
             labels = ['embulk', 'java']
             publicDownloadNumbers = true
 
-            version {
-                name = project.version
+            afterEvaluate {
+                version {
+                    name = project.version
+                }
             }
         }
     }
