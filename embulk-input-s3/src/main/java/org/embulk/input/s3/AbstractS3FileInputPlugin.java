@@ -26,12 +26,9 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
-import org.embulk.config.Config;
-import org.embulk.config.ConfigDefault;
 import org.embulk.config.ConfigDiff;
 import org.embulk.config.ConfigException;
 import org.embulk.config.ConfigSource;
-import org.embulk.config.Task;
 import org.embulk.config.TaskReport;
 import org.embulk.config.TaskSource;
 import org.embulk.input.s3.explorer.S3NameOrderPrefixFileExplorer;
@@ -47,6 +44,12 @@ import org.embulk.spi.util.ResumableInputStream;
 import org.embulk.spi.util.RetryExecutor;
 import org.embulk.util.aws.credentials.AwsCredentials;
 import org.embulk.util.aws.credentials.AwsCredentialsTask;
+import org.embulk.util.config.Config;
+import org.embulk.util.config.ConfigDefault;
+import org.embulk.util.config.ConfigMapper;
+import org.embulk.util.config.ConfigMapperFactory;
+import org.embulk.util.config.Task;
+import org.embulk.util.config.TaskMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,6 +70,7 @@ public abstract class AbstractS3FileInputPlugin
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(S3FileInputPlugin.class);
     private static final String FULL_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
+    private static final ConfigMapperFactory CONFIG_MAPPER_FACTORY = ConfigMapperFactory.builder().addDefaultModules().build();
 
     public interface PluginTask
             extends AwsCredentialsTask, FileList.Task, RetrySupportPluginTask, Task
@@ -139,7 +143,8 @@ public abstract class AbstractS3FileInputPlugin
     @Override
     public ConfigDiff transaction(ConfigSource config, FileInputPlugin.Control control)
     {
-        PluginTask task = config.loadConfig(getTaskClass());
+        final ConfigMapper configMapper = CONFIG_MAPPER_FACTORY.createConfigMapper();
+        final PluginTask task = configMapper.map(config, getTaskClass());
 
         errorIfInternalParamsAreSet(task);
         validateInputTask(task);
@@ -147,7 +152,7 @@ public abstract class AbstractS3FileInputPlugin
         task.setFiles(listFiles(task));
 
         // number of processors is same with number of files
-        return resume(task.dump(), task.getFiles().getTaskCount(), control);
+        return resume(task.toTaskSource(), task.getFiles().getTaskCount(), control);
     }
 
     @Override
@@ -155,7 +160,8 @@ public abstract class AbstractS3FileInputPlugin
                              int taskCount,
                              FileInputPlugin.Control control)
     {
-        PluginTask task = taskSource.loadTask(getTaskClass());
+        final TaskMapper taskMapper = CONFIG_MAPPER_FACTORY.createTaskMapper();
+        final PluginTask task = taskMapper.map(taskSource, getTaskClass());
 
         // validate task
         newS3Client(task);
@@ -343,7 +349,8 @@ public abstract class AbstractS3FileInputPlugin
     @Override
     public TransactionalFileInput open(TaskSource taskSource, int taskIndex)
     {
-        PluginTask task = taskSource.loadTask(getTaskClass());
+        final TaskMapper taskMapper = CONFIG_MAPPER_FACTORY.createTaskMapper();
+        final PluginTask task = taskMapper.map(taskSource, getTaskClass());
         return new S3FileInput(task, taskIndex);
     }
 

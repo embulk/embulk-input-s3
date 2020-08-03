@@ -7,9 +7,6 @@ description = "Reads files stored on Amazon S3"
 repositories {
     mavenCentral()
     jcenter()
-    maven {
-        url "https://dl.bintray.com/embulk-input-s3/maven"
-    }
 }
 
 dependencies {
@@ -48,10 +45,15 @@ dependencies {
         exclude group: "org.slf4j", module: "slf4j-api"
     }
 
-    compile("org.embulk.input.s3:embulk-util-aws-credentials:0.3.5") {
+    compile("org.embulk:embulk-util-aws-credentials:0.4.0") {
         // They conflict with embulk-core. They are once excluded here,
         // and added explicitly with versions exactly the same with embulk-core:0.10.5.
-        exclude group: "*"
+        exclude group: "com.fasterxml.jackson.core", module: "jackson-annotations"
+        exclude group: "com.fasterxml.jackson.core", module: "jackson-core"
+        exclude group: "com.fasterxml.jackson.core", module: "jackson-databind"
+        exclude group: "com.fasterxml.jackson.datatype", module: "jackson-datatype-jdk8"
+        exclude group: "javax.validation", module: "validation-api"
+        exclude group: "joda-time", module: "joda-time"
     }
 
     // They are once excluded from transitive dependencies of other dependencies,

@@ -24,13 +24,20 @@ import org.embulk.config.ConfigException;
 import org.embulk.config.ConfigSource;
 import org.embulk.config.TaskReport;
 import org.embulk.config.TaskSource;
+import org.embulk.spi.Column;
+import org.embulk.spi.ColumnConfig;
 import org.embulk.spi.FileInputRunner;
 import org.embulk.spi.InputPlugin;
 import org.embulk.spi.PageOutput;
 import org.embulk.spi.Schema;
 import org.embulk.spi.TestPageBuilderReader.MockPageOutput;
+import org.embulk.spi.type.Type;
+import org.embulk.spi.type.Types;
 import org.embulk.spi.util.Pages;
 import org.embulk.standards.CsvParserPlugin;
+import org.embulk.util.config.ConfigMapper;
+import org.embulk.util.config.ConfigMapperFactory;
+import org.embulk.util.config.TaskMapper;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -49,6 +56,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assume.assumeNotNull;
+import static org.junit.Assume.assumeTrue;
 
 public class TestS3FileInputPlugin
 {
@@ -77,19 +85,22 @@ public class TestS3FileInputPlugin
     public EmbulkTestRuntime runtime = new EmbulkTestRuntime();
 
     private ConfigSource config;
+    private Schema configSchema;
     private FileInputRunner runner;
     private MockPageOutput output;
 
     @Before
     public void createResources()
     {
+        final List<Object> schemaConfig = schemaConfig();
         config = runtime.getExec().newConfigSource()
                 .set("type", "s3")
                 .set("bucket", EMBULK_S3_TEST_BUCKET)
                 .set("access_key_id", EMBULK_S3_TEST_ACCESS_KEY_ID)
                 .set("secret_access_key", EMBULK_S3_TEST_SECRET_ACCESS_KEY)
                 .set("path_prefix", EMBULK_S3_TEST_PATH_PREFIX)
-                .set("parser", parserConfig(schemaConfig()));
+                .set("parser", parserConfig(schemaConfig));
+        configSchema = buildSchema(schemaConfig);
         runner = new FileInputRunner(runtime.getInstance(S3FileInputPlugin.class));
         output = new MockPageOutput();
     }
@@ -101,7 +112,7 @@ public class TestS3FileInputPlugin
         ConfigDiff configDiff = runner.transaction(config, new Control(runner, output));
 
         assertEquals(EMBULK_S3_TEST_PATH_PREFIX + "/sample_01.csv", configDiff.get(String.class, "last_path"));
-        assertRecords(config, output);
+        assertRecords(configSchema, output);
     }
 
     @Test
@@ -111,7 +122,7 @@ public class TestS3FileInputPlugin
         ConfigDiff configDiff = runner.transaction(config, new Control(runner, output));
 
         assertEquals(EMBULK_S3_TEST_PATH_PREFIX + "/sample_01.csv", configDiff.get(String.class, "last_path"));
-        assertEquals(0, getRecords(config, output).size());
+        assertEquals(0, getRecords(configSchema, output).size());
     }
 
     @Test
@@ -132,7 +143,7 @@ public class TestS3FileInputPlugin
         ConfigDiff configDiff = runner.transaction(config, new Control(runner, output));
 
         assertEquals(EMBULK_S3_TEST_PATH_PREFIX + "/sample_01.csv", configDiff.get(String.class, "last_path")); // keep the last_path
-        assertEquals(0, getRecords(config, output).size());
+        assertEquals(0, getRecords(configSchema, output).size());
     }
 
     @Test
@@ -142,7 +153,7 @@ public class TestS3FileInputPlugin
         ConfigDiff configDiff = runner.transaction(config, new Control(runner, output));
 
         assertNull(configDiff.get(String.class, "last_path"));
-        assertEquals(0, getRecords(config, output).size());
+        assertEquals(0, getRecords(configSchema, output).size());
     }
 
     @Test
@@ -153,7 +164,7 @@ public class TestS3FileInputPlugin
             ConfigDiff configDiff = runner.transaction(config, new Control(runner, output));
 
             assertEquals(EMBULK_S3_TEST_PATH_PREFIX + "/sample_01.csv", configDiff.get(String.class, "last_path"));
-            assertRecords(config, output);
+            assertRecords(configSchema, output);
         }
 
         output = new MockPageOutput();
@@ -162,7 +173,7 @@ public class TestS3FileInputPlugin
             ConfigDiff configDiff = runner.transaction(config, new Control(runner, output));
 
             assertNull(configDiff.get(String.class, "last_path"));
-            assertEquals(0, getRecords(config, output).size());
+            assertEquals(0, getRecords(configSchema, output).size());
         }
     }
 
@@ -174,7 +185,7 @@ public class TestS3FileInputPlugin
                 .set("path_prefix", null);
         ConfigDiff configDiff = runner.transaction(config, new Control(runner, output));
         assertEquals(String.format("%s/sample_01.csv", EMBULK_S3_TEST_PATH_PREFIX), configDiff.get(String.class, "last_path"));
-        assertRecords(config, output);
+        assertRecords(configSchema, output);
     }
 
     @Test
@@ -185,16 +196,17 @@ public class TestS3FileInputPlugin
                 .set("path_prefix", "foo"); // path_prefix has the bad value, if path_prefix is chosen, expected result will be failed
         ConfigDiff configDiff = runner.transaction(config, new Control(runner, output));
         assertEquals(String.format("%s/sample_01.csv", EMBULK_S3_TEST_PATH_PREFIX), configDiff.get(String.class, "last_path"));
-        assertRecords(config, output);
+        assertRecords(configSchema, output);
     }
 
     @Test
     public void configuredEndpoint()
     {
-        S3PluginTask task = config.deepCopy()
+        final ConfigMapper configMapper = CONFIG_MAPPER_FACTORY.createConfigMapper();
+        final ConfigSource configSource = config.deepCopy()
                 .set("endpoint", "s3-ap-southeast-1.amazonaws.com")
-                .set("region", "ap-southeast-2")
-                .loadConfig(S3PluginTask.class);
+                .set("region", "ap-southeast-2");
+        final S3PluginTask task = configMapper.map(configSource, S3PluginTask.class);
         S3FileInputPlugin plugin = runtime.getInstance(S3FileInputPlugin.class);
         AmazonS3 s3Client = plugin.newS3Client(task);
 
@@ -205,10 +217,11 @@ public class TestS3FileInputPlugin
     @Test
     public void configuredRegion()
     {
-        S3PluginTask task = config.deepCopy()
+        final ConfigMapper configMapper = CONFIG_MAPPER_FACTORY.createConfigMapper();
+        final ConfigSource configSource = config.deepCopy()
                 .set("region", "ap-southeast-2")
-                .remove("endpoint")
-                .loadConfig(S3PluginTask.class);
+                .remove("endpoint");
+        final S3PluginTask task = configMapper.map(configSource, S3PluginTask.class);
         S3FileInputPlugin plugin = runtime.getInstance(S3FileInputPlugin.class);
         AmazonS3 s3Client = plugin.newS3Client(task);
 
@@ -219,10 +232,11 @@ public class TestS3FileInputPlugin
     @Test
     public void unconfiguredEndpointAndRegion()
     {
-        S3PluginTask task = config.deepCopy()
+        final ConfigMapper configMapper = CONFIG_MAPPER_FACTORY.createConfigMapper();
+        final ConfigSource configSource = config.deepCopy()
                 .remove("endpoint")
-                .remove("region")
-                .loadConfig(S3PluginTask.class);
+                .remove("region");
+        final S3PluginTask task = configMapper.map(configSource, S3PluginTask.class);
         S3FileInputPlugin plugin = runtime.getInstance(S3FileInputPlugin.class);
         AmazonS3 s3Client = plugin.newS3Client(task);
 
@@ -318,9 +332,53 @@ public class TestS3FileInputPlugin
         return map;
     }
 
-    static void assertRecords(ConfigSource config, MockPageOutput output)
+    static Schema buildSchema(final List<Object> schemaConfig)
     {
-        List<Object[]> records = getRecords(config, output);
+        final ArrayList<Column> columns = new ArrayList<>();
+        int index = 0;
+        for (final Object columnConfigObject : schemaConfig) {
+            assumeTrue(columnConfigObject instanceof Map);
+            final Map<Object, Object> columnConfigMap = (Map<Object, Object>) columnConfigObject;
+            final String name = (String) columnConfigMap.get("name");
+            final String type = (String) columnConfigMap.get("type");
+            final String format;
+            if (type.equals("timestamp")) {
+                format = (String) columnConfigMap.get("format");
+            } else {
+                format = null;
+            }
+            final ColumnConfig columnConfig = new ColumnConfig(name, toType(type), format);
+            columns.add(columnConfig.toColumn(index++));
+        }
+        return new Schema(columns);
+    }
+
+    static Type toType(final String type)
+    {
+        if (type.equals(Types.BOOLEAN.getName())) {
+            return Types.BOOLEAN;
+        }
+        if (type.equals(Types.LONG.getName())) {
+            return Types.LONG;
+        }
+        if (type.equals(Types.DOUBLE.getName())) {
+            return Types.DOUBLE;
+        }
+        if (type.equals(Types.STRING.getName())) {
+            return Types.STRING;
+        }
+        if (type.equals(Types.TIMESTAMP.getName())) {
+            return Types.TIMESTAMP;
+        }
+        if (type.equals(Types.JSON.getName())) {
+            return Types.JSON;
+        }
+        throw new RuntimeException();
+    }
+
+    static void assertRecords(Schema configSchema, MockPageOutput output)
+    {
+        List<Object[]> records = getRecords(configSchema, output);
 
         assertEquals(2, records.size());
         {
@@ -350,9 +408,10 @@ public class TestS3FileInputPlugin
         }
     }
 
-    static List<Object[]> getRecords(ConfigSource config, MockPageOutput output)
+    static List<Object[]> getRecords(Schema configSchema, MockPageOutput output)
     {
-        Schema schema = config.getNested("parser").loadConfig(CsvParserPlugin.PluginTask.class).getSchemaConfig().toSchema();
-        return Pages.toObjects(schema, output.pages);
+        return Pages.toObjects(configSchema, output.pages);
     }
+
+    private static final ConfigMapperFactory CONFIG_MAPPER_FACTORY = ConfigMapperFactory.builder().addDefaultModules().build();
 }

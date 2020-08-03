@@ -20,9 +20,9 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import org.embulk.config.Config;
-import org.embulk.config.ConfigDefault;
 import org.embulk.config.ConfigSource;
+import org.embulk.util.config.Config;
+import org.embulk.util.config.ConfigDefault;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
