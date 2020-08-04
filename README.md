@@ -2,7 +2,7 @@
 
 ## Overview
 
-embulk-input-s3 v0.3.0+ requires Embulk v0.9.12+
+embulk-input-s3 v0.4.0+ requires Embulk v0.9.23+
 
 * Plugin type: **file input**
 * Resume supported: **yes**
@@ -161,15 +161,13 @@ in:
 ## Build
 
 ```
-./gradlew gem
+./gradlew clean embulk-input-s3:gem embulk-input-riak_cs:gem
 ```
 
 ## Release
 
 ```
-./gradlew clean gem classpath
-./gradlew gemPush # release plugin gems to RubyGems.org
-./gradlew bintrayUpload # release embulk-(input-s3|input-riak_cs|util-aws-credentials) to Bintray maven repo
+./gradlew clean embulk-input-s3:gemPush embulk-input-riak_cs:gemPush embulk-input-s3:bintrayUpload embulk-input-riak_cs:bintrayUpload
 ```
 
 ## Test
