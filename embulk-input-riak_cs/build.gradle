@@ -1,5 +1,3 @@
-apply plugin: "jacoco"
-
 group = "${rootProject.group}"
 version = "${rootProject.version}"
 description = "Reads files stored on Riak CS"

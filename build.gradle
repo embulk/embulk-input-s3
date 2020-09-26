@@ -1,7 +1,7 @@
 plugins {
-    id "com.jfrog.bintray" version "1.8.4"
     id "java"
     id "maven-publish"
+    id "signing"
     id "jacoco"
     id "checkstyle"
     id "org.embulk.embulk-plugins" version "0.4.2" apply false
@@ -10,8 +10,12 @@ plugins {
 group = "org.embulk"
 version = "0.5.0-SNAPSHOT"
 
-allprojects {
+subprojects {
     apply plugin: "java"
+    apply plugin: "maven-publish"
+    apply plugin: "signing"
+    apply plugin: "jacoco"
+    apply plugin: "org.embulk.embulk-plugins"
 
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
@@ -25,46 +29,6 @@ allprojects {
         withJavadocJar()
         withSourcesJar()
     }
-}
-
-subprojects {
-    apply plugin: "com.jfrog.bintray"
-
-    bintray {
-        // write at your bintray user name and api key to ~/.gradle/gradle.properties file:
-        user = project.hasProperty('bintray_user') ? bintray_user : ''
-        key = project.hasProperty('bintray_api_key') ? bintray_api_key : ''
-
-        publications = ['mavenJava']
-        publish = true
-
-        pkg {
-            userOrg = 'embulk-input-s3'
-            repo = 'maven'
-            afterEvaluate {
-                name = project.name
-                desc = project.description
-            }
-            websiteUrl = 'https://github.com/embulk/embulk-input-s3'
-            issueTrackerUrl = 'https://github.com/embulk/embulk-input-s3/issues'
-            vcsUrl = 'https://github.com/embulk/embulk-input-s3.git'
-            licenses = ['Apache-2.0']
-            labels = ['embulk', 'java']
-            publicDownloadNumbers = true
-
-            afterEvaluate {
-                version {
-                    name = project.version
-                }
-            }
-        }
-    }
-}
-
-subprojects {
-    // embulk-input-s3, embulk-input-riak_cs
-    apply plugin: "maven-publish"
-    apply plugin: "org.embulk.embulk-plugins"
 
     test {
         testLogging {
@@ -87,7 +51,7 @@ subprojects {
 
     publishing {
         publications {
-             mavenJava(MavenPublication) {
+             maven(MavenPublication) {
                 afterEvaluate { project ->
                     groupId = "${project.group}"
                     artifactId = "${project.name}"
@@ -153,6 +117,26 @@ subprojects {
                 }
             }
         }
+
+        repositories {
+            maven {  // publishMavenPublicationToMavenCentralRepository
+                name = "mavenCentral"
+                if (project.version.endsWith("-SNAPSHOT")) {
+                    url "https://oss.sonatype.org/content/repositories/snapshots"
+                } else {
+                    url "https://oss.sonatype.org/service/local/staging/deploy/maven2"
+                }
+
+                credentials {
+                    username = project.hasProperty("ossrhUsername") ? ossrhUsername : ""
+                    password = project.hasProperty("ossrhPassword") ? ossrhPassword : ""
+                }
+            }
+        }
+    }
+
+    signing {
+        sign publishing.publications.maven
     }
 
     gemPush {
