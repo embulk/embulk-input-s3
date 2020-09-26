@@ -21,7 +21,7 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.services.s3.model.StorageClass;
 import org.embulk.config.ConfigException;
 import org.embulk.input.s3.FileList;
-import org.embulk.spi.util.RetryExecutor;
+import org.embulk.util.retryhelper.RetryExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

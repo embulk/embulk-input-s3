@@ -10,12 +10,13 @@ repositories {
 }
 
 dependencies {
-    compileOnly "org.embulk:embulk-api:0.10.5"
-    compileOnly "org.embulk:embulk-core:0.10.5"
+    compileOnly "org.embulk:embulk-api:0.10.18"
+    compileOnly "org.embulk:embulk-spi:0.10.18"
+    // No longer need to depend on "embulk-core"!
 
     compile(project(":embulk-input-s3")) {
         // They conflict with embulk-core. They are once excluded here,
-        // and added explicitly with versions exactly the same with embulk-core:0.10.5.
+        // and added explicitly with versions exactly the same with embulk-core:0.10.18.
         exclude group: "com.fasterxml.jackson.core", module: "jackson-annotations"
         exclude group: "com.fasterxml.jackson.core", module: "jackson-core"
         exclude group: "com.fasterxml.jackson.core", module: "jackson-databind"
@@ -25,7 +26,7 @@ dependencies {
     }
 
     // They are once excluded from transitive dependencies of other dependencies,
-    // and added explicitly with versions exactly the same with embulk-core:0.10.5.
+    // and added explicitly with versions exactly the same with embulk-core:0.10.18.
     compile "com.fasterxml.jackson.core:jackson-annotations:2.6.7"
     compile "com.fasterxml.jackson.core:jackson-core:2.6.7"
     compile "com.fasterxml.jackson.core:jackson-databind:2.6.7"
@@ -35,13 +36,12 @@ dependencies {
 
     testCompile "junit:junit:4.13"
     testCompile "org.mockito:mockito-core:1.10.19"
-    testCompile "org.embulk:embulk-api:0.10.5"
-    testCompile "org.embulk:embulk-core:0.10.5"
-    testCompile "org.embulk:embulk-core:0.10.5:tests"
-    testCompile "org.embulk:embulk-deps-buffer:0.10.5"
-    testCompile "org.embulk:embulk-deps-config:0.10.5"
-    testCompile "org.embulk:embulk-deps-timestamp:0.10.5"
-    testCompile "org.embulk:embulk-standards:0.10.5"
+    testCompile "org.embulk:embulk-api:0.10.18"
+    testCompile "org.embulk:embulk-spi:0.10.18"
+    testCompile "org.embulk:embulk-core:0.10.18"
+    testCompile "org.embulk:embulk-core:0.10.18:tests"
+    testCompile "org.embulk:embulk-deps:0.10.18"
+    testCompile "org.embulk:embulk-standards:0.10.18"
     testCompile project(":embulk-input-s3").sourceSets.test.output
 }
 
@@ -49,17 +49,7 @@ embulkPlugin {
     mainClass = "org.embulk.input.riak_cs.RiakCsFileInputPlugin"
     category = "input"
     type = "riak_cs"
-    ignoreConflicts = [
-        // They conflict with embulk-core:0.10.5, but embulk-core will remove them from its dependencies.
-        // They are intentionally included in the plugin's dependencies to keep it working before and after the removal.
-        // Warning messages against them are marked to ignore explicitly here.
-        [ group: "com.fasterxml.jackson.core", module: "jackson-annotations" ],
-        [ group: "com.fasterxml.jackson.core", module: "jackson-core" ],
-        [ group: "com.fasterxml.jackson.core", module: "jackson-databind" ],
-        [ group: "com.fasterxml.jackson.datatype", module: "jackson-datatype-jdk8" ],
-        [ group: "javax.validation", module: "validation-api" ],
-        [ group: "joda-time", module: "joda-time" ],
-    ]
+    // "ignoreConflicts" is no longer needed because this plugin depends only on "embulk-api" and "embulk-spi".
 }
 
 gem {

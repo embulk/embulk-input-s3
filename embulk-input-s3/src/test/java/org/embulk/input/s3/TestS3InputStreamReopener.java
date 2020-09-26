@@ -24,6 +24,7 @@ import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import org.embulk.EmbulkTestRuntime;
 import org.embulk.input.s3.AbstractS3FileInputPlugin.S3InputStreamReopener;
+import org.embulk.util.retryhelper.RetryExecutor;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -33,7 +34,6 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
-import static org.embulk.spi.util.RetryExecutor.retryExecutor;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -78,9 +78,10 @@ public class TestS3InputStreamReopener
                     client,
                     new GetObjectRequest("my_bucket", "in/aa/a"),
                     content.length(),
-                    retryExecutor()
-                            .withInitialRetryWait(0)
-                            .withRetryLimit(1));
+                    RetryExecutor.builder()
+                            .withInitialRetryWaitMillis(0)
+                            .withRetryLimit(1)
+                            .build());
 
             try (InputStream in = opener.reopen(0, new RuntimeException())) {
                 BufferedReader r = new BufferedReader(new InputStreamReader(in));
@@ -99,9 +100,10 @@ public class TestS3InputStreamReopener
                 client,
                 new GetObjectRequest("my_bucket", "in/aa/a"),
                 content.length(),
-                retryExecutor()
-                        .withInitialRetryWait(0)
-                        .withRetryLimit(0));
+                RetryExecutor.builder()
+                        .withInitialRetryWaitMillis(0)
+                        .withRetryLimit(0)
+                        .build());
 
         opener.reopen(0, new RuntimeException());
     }
@@ -116,9 +118,10 @@ public class TestS3InputStreamReopener
                 client,
                 new GetObjectRequest("my_bucket", "in/aa/a"),
                 "value".length(),
-                retryExecutor()
-                        .withInitialRetryWait(0)
-                        .withRetryLimit(2));
+                RetryExecutor.builder()
+                        .withInitialRetryWaitMillis(0)
+                        .withRetryLimit(2)
+                        .build());
 
         try (InputStream in = opener.reopen(0, new AmazonClientException("This exception can be ignored"))) {
             fail("Should throw exception.");

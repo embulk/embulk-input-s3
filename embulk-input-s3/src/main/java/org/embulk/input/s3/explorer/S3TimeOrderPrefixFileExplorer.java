@@ -20,9 +20,8 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
-import org.apache.commons.lang3.StringUtils;
 import org.embulk.input.s3.DefaultRetryable;
-import org.embulk.spi.util.RetryExecutor;
+import org.embulk.util.retryhelper.RetryExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,7 +77,7 @@ public class S3TimeOrderPrefixFileExplorer extends S3PrefixFileExplorer
     {
         if (lastPath == null) {
             LOGGER.info("The total number of LIST requests is {}{}.", numOfReq,
-                    numOfReq < 10 ? StringUtils.EMPTY : ". Clean up your s3 bucket to reduce the number of requests and improve the ingesting performance");
+                    numOfReq < 10 ? "" : ". Clean up your s3 bucket to reduce the number of requests and improve the ingesting performance");
             return false;
         }
         return true;
