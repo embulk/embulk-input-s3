@@ -38,10 +38,6 @@ import org.embulk.spi.BufferAllocator;
 import org.embulk.spi.Exec;
 import org.embulk.spi.FileInputPlugin;
 import org.embulk.spi.TransactionalFileInput;
-import org.embulk.spi.util.InputStreamFileInput;
-import org.embulk.spi.util.InputStreamFileInput.InputStreamWithHints;
-import org.embulk.spi.util.ResumableInputStream;
-import org.embulk.spi.util.RetryExecutor;
 import org.embulk.util.aws.credentials.AwsCredentials;
 import org.embulk.util.aws.credentials.AwsCredentialsTask;
 import org.embulk.util.config.Config;
@@ -50,6 +46,9 @@ import org.embulk.util.config.ConfigMapper;
 import org.embulk.util.config.ConfigMapperFactory;
 import org.embulk.util.config.Task;
 import org.embulk.util.config.TaskMapper;
+import org.embulk.util.file.InputStreamFileInput;
+import org.embulk.util.file.ResumableInputStream;
+import org.embulk.util.retryhelper.RetryExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,7 +62,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static java.lang.String.format;
-import static org.embulk.spi.util.RetryExecutor.retryExecutor;
 
 public abstract class AbstractS3FileInputPlugin
         implements FileInputPlugin
@@ -169,7 +167,7 @@ public abstract class AbstractS3FileInputPlugin
         control.run(taskSource, taskCount);
 
         // build next config
-        ConfigDiff configDiff = Exec.newConfigDiff();
+        ConfigDiff configDiff = CONFIG_MAPPER_FACTORY.newConfigDiff();
 
         // last_path
         if (task.getIncremental()) {
@@ -273,10 +271,11 @@ public abstract class AbstractS3FileInputPlugin
      */
     private static RetryExecutor retryExecutorFrom(RetrySupportPluginTask task)
     {
-        return retryExecutor()
+        return RetryExecutor.builder()
             .withRetryLimit(task.getMaximumRetries())
-            .withInitialRetryWait(task.getInitialRetryIntervalMillis())
-            .withMaxRetryWait(task.getMaximumRetryIntervalMillis());
+            .withInitialRetryWaitMillis(task.getInitialRetryIntervalMillis())
+            .withMaxRetryWaitMillis(task.getMaximumRetryIntervalMillis())
+            .build();
     }
 
     private FileList listFiles(final PluginTask task)
@@ -408,7 +407,7 @@ public abstract class AbstractS3FileInputPlugin
 
         public TaskReport commit()
         {
-            return Exec.newTaskReport();
+            return CONFIG_MAPPER_FACTORY.newTaskReport();
         }
 
         @Override
@@ -442,7 +441,7 @@ public abstract class AbstractS3FileInputPlugin
         }
 
         @Override
-        public InputStreamWithHints openNextWithHints() throws IOException
+        public InputStreamFileInput.InputStreamWithHints openNextWithHints() throws IOException
         {
             if (!iterator.hasNext()) {
                 return null;
@@ -463,7 +462,7 @@ public abstract class AbstractS3FileInputPlugin
             // Keep it for now but might be removed in the future.
             LOGGER.info("Open S3Object with bucket [{}], key [{}], with size [{}]", bucket, key, objectSize);
             InputStream inputStream = new ResumableInputStream(object.getObjectContent(), new S3InputStreamReopener(client, request, objectSize, retryExec));
-            return new InputStreamWithHints(inputStream, String.format("s3://%s/%s", bucket, key));
+            return new InputStreamFileInput.InputStreamWithHints(inputStream, String.format("s3://%s/%s", bucket, key));
         }
 
         @Override

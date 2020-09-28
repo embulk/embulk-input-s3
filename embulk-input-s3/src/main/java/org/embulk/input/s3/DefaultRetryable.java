@@ -18,7 +18,9 @@ package org.embulk.input.s3;
 
 import com.amazonaws.AmazonServiceException;
 import org.apache.http.HttpStatus;
-import org.embulk.spi.util.RetryExecutor;
+import org.embulk.util.retryhelper.RetryExecutor;
+import org.embulk.util.retryhelper.RetryGiveupException;
+import org.embulk.util.retryhelper.Retryable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,8 +29,6 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 
 import static java.lang.String.format;
-import static org.embulk.spi.util.RetryExecutor.RetryGiveupException;
-import static org.embulk.spi.util.RetryExecutor.Retryable;
 
 /**
  * Retryable utility, regardless the occurred exceptions,

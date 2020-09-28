@@ -22,7 +22,7 @@ import com.amazonaws.services.s3.model.StorageClass;
 import org.embulk.EmbulkTestRuntime;
 import org.embulk.config.ConfigException;
 import org.embulk.input.s3.FileList;
-import org.embulk.spi.util.RetryExecutor;
+import org.embulk.util.retryhelper.RetryExecutor;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

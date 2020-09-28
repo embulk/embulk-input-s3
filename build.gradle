@@ -7,8 +7,8 @@ plugins {
     id "org.embulk.embulk-plugins" version "0.4.2" apply false
 }
 
-group = "org.embulk.input.s3"
-version = "0.4.1-SNAPSHOT"
+group = "org.embulk"
+version = "0.5.0-SNAPSHOT"
 
 allprojects {
     apply plugin: "java"

@@ -21,7 +21,7 @@ import com.amazonaws.services.s3.model.GetObjectMetadataRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import org.embulk.input.s3.DefaultRetryable;
 import org.embulk.input.s3.FileList;
-import org.embulk.spi.util.RetryExecutor;
+import org.embulk.util.retryhelper.RetryExecutor;
 
 public class S3SingleFileExplorer extends S3FileExplorer
 {

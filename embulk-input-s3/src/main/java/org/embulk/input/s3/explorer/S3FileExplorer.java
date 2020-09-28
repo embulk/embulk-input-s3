@@ -18,7 +18,7 @@ package org.embulk.input.s3.explorer;
 
 import com.amazonaws.services.s3.AmazonS3;
 import org.embulk.input.s3.FileList;
-import org.embulk.spi.util.RetryExecutor;
+import org.embulk.util.retryhelper.RetryExecutor;
 
 public abstract class S3FileExplorer
 {

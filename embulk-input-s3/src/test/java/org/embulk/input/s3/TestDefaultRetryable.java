@@ -17,8 +17,8 @@
 package org.embulk.input.s3;
 
 import org.embulk.EmbulkTestRuntime;
-import org.embulk.spi.util.RetryExecutor;
-import org.embulk.spi.util.RetryExecutor.RetryGiveupException;
+import org.embulk.util.retryhelper.RetryExecutor;
+import org.embulk.util.retryhelper.RetryGiveupException;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -74,28 +74,32 @@ public class TestDefaultRetryable
         }
     }
 
-    private static RetryExecutor retryExecutor()
+    private static RetryExecutor.Builder retryExecutorBuilder()
     {
-        return RetryExecutor.retryExecutor()
-                .withInitialRetryWait(0)
-                .withMaxRetryWait(0);
+        return RetryExecutor.builder()
+                .withInitialRetryWaitMillis(0)
+                .withMaxRetryWaitMillis(0);
     }
 
     @Test
     @SuppressWarnings("unchecked")
     public void guarantee_retry_attempts_just_like_Retryable() throws Exception
     {
-        retryExecutor()
+        retryExecutorBuilder()
                 .withRetryLimit(0)
+                .build()
                 .run(new DefaultRetryable(Deny.until(0)));
-        retryExecutor()
+        retryExecutorBuilder()
                 .withRetryLimit(1)
+                .build()
                 .run(new DefaultRetryable(Deny.until(1)));
-        retryExecutor()
+        retryExecutorBuilder()
                 .withRetryLimit(2)
+                .build()
                 .run(new DefaultRetryable(Deny.until(1)));
-        retryExecutor()
+        retryExecutorBuilder()
                 .withRetryLimit(3)
+                .build()
                 .run(new DefaultRetryable(Deny.until(2)));
     }
 
@@ -103,8 +107,9 @@ public class TestDefaultRetryable
     @SuppressWarnings("unchecked")
     public void fail_after_exceeding_attempts_just_like_Retryable() throws Exception
     {
-        retryExecutor()
+        retryExecutorBuilder()
                 .withRetryLimit(3)
+                .build()
                 .run(new DefaultRetryable(Deny.until(4)));
     }
 
@@ -113,7 +118,7 @@ public class TestDefaultRetryable
     public void execute_should_unwrap_RetryGiveupException() throws Exception
     {
         new DefaultRetryable(Deny.until(4))
-                .executeWith(retryExecutor().withRetryLimit(3));
+                .executeWith(retryExecutorBuilder().withRetryLimit(3).build());
     }
 
     @Test(expected = RuntimeException.class)
@@ -121,13 +126,13 @@ public class TestDefaultRetryable
     public void execute_should_unwrap_RetryGiveupException_but_rewrap_checked_exception_in_a_RuntimeException()
     {
         new DefaultRetryable(Deny.until(4).with(new Exception("A checked exception")))
-                .executeWith(retryExecutor().withRetryLimit(3));
+                .executeWith(retryExecutorBuilder().withRetryLimit(3).build());
     }
 
     @Test(expected = IOException.class)
     public void executeAndPropagateAsIs_should_leave_original_exception_unwrapped() throws IOException
     {
-        RetryExecutor retryExc = retryExecutor().withRetryLimit(3);
+        RetryExecutor retryExc = retryExecutorBuilder().withRetryLimit(3).build();
         // An explicit type parameter for operation return type is needed here,
         // Without one, javac (at least on 1.8) will fails to infer the X exception type parameter.
         new DefaultRetryable<Object>() {
@@ -142,6 +147,6 @@ public class TestDefaultRetryable
     @Test(expected = IllegalStateException.class)
     public void execute_without_an_implementation_should_throw_an_IllegalStateException()
     {
-        new DefaultRetryable().executeWith(retryExecutor());
+        new DefaultRetryable().executeWith(retryExecutorBuilder().build());
     }
 }
