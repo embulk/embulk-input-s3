@@ -8,12 +8,12 @@ repositories {
 }
 
 dependencies {
-    compileOnly "org.embulk:embulk-api:0.10.18"
-    compileOnly "org.embulk:embulk-spi:0.10.18"
+    compileOnly "org.embulk:embulk-api:0.10.19"
+    compileOnly "org.embulk:embulk-spi:0.10.19"
 
     compile("com.amazonaws:aws-java-sdk-s3:1.11.466") {
         // They conflict with embulk-core. They are once excluded here,
-        // and added explicitly with versions exactly the same with embulk-core:0.10.18.
+        // and added explicitly with versions exactly the same with embulk-core:0.10.19.
         exclude group: "com.fasterxml.jackson.core", module: "jackson-annotations"
         exclude group: "com.fasterxml.jackson.core", module: "jackson-core"
         exclude group: "com.fasterxml.jackson.core", module: "jackson-databind"
@@ -25,7 +25,7 @@ dependencies {
 
     compile("com.amazonaws:aws-java-sdk-sts:1.11.466") {
         // They conflict with embulk-core. They are once excluded here,
-        // and added explicitly with versions exactly the same with embulk-core:0.10.18.
+        // and added explicitly with versions exactly the same with embulk-core:0.10.19.
         exclude group: "com.fasterxml.jackson.core", module: "jackson-annotations"
         exclude group: "com.fasterxml.jackson.core", module: "jackson-core"
         exclude group: "com.fasterxml.jackson.core", module: "jackson-databind"
@@ -43,13 +43,13 @@ dependencies {
         exclude group: "org.slf4j", module: "slf4j-api"
     }
 
-    compile "org.embulk:embulk-util-retryhelper:0.8.0"
+    compile "org.embulk:embulk-util-retryhelper:0.8.1"
 
     compile "org.embulk:embulk-util-file:0.1.1"
 
     compile("org.embulk:embulk-util-aws-credentials:0.4.0") {
         // They conflict with embulk-core. They are once excluded here,
-        // and added explicitly with versions exactly the same with embulk-core:0.10.18.
+        // and added explicitly with versions exactly the same with embulk-core:0.10.19.
         exclude group: "com.fasterxml.jackson.core", module: "jackson-annotations"
         exclude group: "com.fasterxml.jackson.core", module: "jackson-core"
         exclude group: "com.fasterxml.jackson.core", module: "jackson-databind"
@@ -58,9 +58,9 @@ dependencies {
         exclude group: "joda-time", module: "joda-time"
     }
 
-    compile("org.embulk:embulk-util-config:0.1.3") {
+    compile("org.embulk:embulk-util-config:0.2.0") {
         // They conflict with embulk-core. They are once excluded here,
-        // and added explicitly with versions exactly the same with embulk-core:0.10.18.
+        // and added explicitly with versions exactly the same with embulk-core:0.10.19.
         exclude group: "com.fasterxml.jackson.core", module: "jackson-annotations"
         exclude group: "com.fasterxml.jackson.core", module: "jackson-core"
         exclude group: "com.fasterxml.jackson.core", module: "jackson-databind"
@@ -69,7 +69,7 @@ dependencies {
     }
 
     // They are once excluded from transitive dependencies of other dependencies,
-    // and added explicitly with versions exactly the same with embulk-core:0.10.18.
+    // and added explicitly with versions exactly the same with embulk-core:0.10.19.
     compile "com.fasterxml.jackson.core:jackson-annotations:2.6.7"
     compile "com.fasterxml.jackson.core:jackson-core:2.6.7"
     compile "com.fasterxml.jackson.core:jackson-databind:2.6.7"
@@ -79,12 +79,12 @@ dependencies {
 
     testCompile "junit:junit:4.13"
     testCompile "org.mockito:mockito-core:1.10.19"
-    testCompile "org.embulk:embulk-api:0.10.18"
-    testCompile "org.embulk:embulk-spi:0.10.18"
-    testCompile "org.embulk:embulk-core:0.10.18"
-    testCompile "org.embulk:embulk-core:0.10.18:tests"
-    testCompile "org.embulk:embulk-deps:0.10.18"
-    testCompile "org.embulk:embulk-standards:0.10.18"
+    testCompile "org.embulk:embulk-api:0.10.19"
+    testCompile "org.embulk:embulk-spi:0.10.19"
+    testCompile "org.embulk:embulk-core:0.10.19"
+    testCompile "org.embulk:embulk-core:0.10.19:tests"
+    testCompile "org.embulk:embulk-deps:0.10.19"
+    testCompile "org.embulk:embulk-standards:0.10.19"
 }
 
 embulkPlugin {
