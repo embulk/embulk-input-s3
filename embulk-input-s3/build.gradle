@@ -58,7 +58,7 @@ dependencies {
         exclude group: "joda-time", module: "joda-time"
     }
 
-    compile("org.embulk:embulk-util-config:0.2.0") {
+    compile("org.embulk:embulk-util-config:0.2.1") {
         // They conflict with embulk-core. They are once excluded here,
         // and added explicitly with versions exactly the same with embulk-core:0.10.19.
         exclude group: "com.fasterxml.jackson.core", module: "jackson-annotations"
