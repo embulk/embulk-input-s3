@@ -17,6 +17,7 @@
 package org.embulk.input.s3.explorer;
 
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.services.s3.model.StorageClass;
 import org.embulk.config.ConfigException;
@@ -54,7 +55,13 @@ public abstract class S3PrefixFileExplorer extends S3FileExplorer
                         LOGGER.warn("Skipped \"s3://{}/{}\" that stored at Glacier.", bucketName, s.getKey());
                         continue;
                     }
-                    throw new ConfigException("Detected an object stored at Glacier. Set \"skip_glacier_objects\" option to \"true\" to skip this.");
+
+                    ObjectMetadata objectMetadata = fetchObjectMetadata(s);
+                    if (objectMetadata != null && objectMetadata.getRestoreExpirationTime() != null) {
+                        LOGGER.info("Restored Glacier object \"s3://{}/{}\" found", bucketName, s.getKey());
+                    } else {
+                        throw new ConfigException("Detected an object stored at Glacier. Set \"skip_glacier_objects\" option to \"true\" to skip this.");
+                    }
                 }
                 if (s.getSize() > 0) {
                     builder.add(s.getKey(), s.getSize());
@@ -68,6 +75,8 @@ public abstract class S3PrefixFileExplorer extends S3FileExplorer
     }
 
     protected abstract List<S3ObjectSummary> fetch();
+
+    protected abstract ObjectMetadata fetchObjectMetadata(final S3ObjectSummary obj);
 
     protected abstract boolean hasNext();
 }
