@@ -17,8 +17,10 @@
 package org.embulk.input.s3.explorer;
 
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.GetObjectMetadataRequest;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import org.embulk.input.s3.DefaultRetryable;
 import org.embulk.util.retryhelper.RetryExecutor;
@@ -70,6 +72,17 @@ public class S3TimeOrderPrefixFileExplorer extends S3PrefixFileExplorer
                 .filter(s3ObjectSummary -> s3ObjectSummary.getLastModified().before(to)
                         && (!from.isPresent() || s3ObjectSummary.getLastModified().equals(from.get()) || s3ObjectSummary.getLastModified().after(from.get())))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    protected ObjectMetadata fetchObjectMetadata(S3ObjectSummary obj) {
+        final GetObjectMetadataRequest req = new GetObjectMetadataRequest(obj.getBucketName(), obj.getKey());
+
+        return new DefaultRetryable<ObjectMetadata>("Get object metadata")
+        {
+            @Override
+            public ObjectMetadata call() { return s3Client.getObjectMetadata(req); }
+        }.executeWith(retryExecutor);
     }
 
     @Override

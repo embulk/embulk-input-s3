@@ -17,6 +17,7 @@
 package org.embulk.input.s3.explorer;
 
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.services.s3.model.StorageClass;
 import org.embulk.EmbulkTestRuntime;
@@ -31,6 +32,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
 import static org.mockito.Mockito.doReturn;
@@ -73,6 +75,20 @@ public class TestS3PrefixFileExplorer
     {
         when(s3ObjectSummary.getStorageClass()).thenReturn(StorageClass.Glacier.toString());
         s3PrefixFileExplorer.addToBuilder(builder);
+    }
+
+    @Test
+    public void addToBuilder_should_not_throw_exception_if_restored_glacier_object()
+    {
+        when(s3ObjectSummary.getStorageClass()).thenReturn(StorageClass.Glacier.toString());
+        when(s3ObjectSummary.getKey()).thenReturn(PATH_PREFIX + OBJECT_KEY);
+        when(s3ObjectSummary.getSize()).thenReturn(1L);
+        ObjectMetadata objectMetadata = new ObjectMetadata();
+        objectMetadata.setRestoreExpirationTime(new Date());
+        doReturn(objectMetadata).when(s3PrefixFileExplorer).fetchObjectMetadata(s3ObjectSummary);
+        doReturn(true).when(s3PrefixFileExplorer).hasNext();
+        s3PrefixFileExplorer.addToBuilder(builder);
+        verify(builder).add(PATH_PREFIX + OBJECT_KEY, 1);
     }
 
     @Test
@@ -131,6 +147,9 @@ public class TestS3PrefixFileExplorer
             {
                 return null;
             }
+
+            @Override
+            protected ObjectMetadata fetchObjectMetadata(S3ObjectSummary obj) { return null; }
 
             @Override
             protected boolean hasNext()
