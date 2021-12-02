@@ -34,7 +34,7 @@ import org.embulk.config.TaskSource;
 import org.embulk.input.s3.explorer.S3NameOrderPrefixFileExplorer;
 import org.embulk.input.s3.explorer.S3SingleFileExplorer;
 import org.embulk.input.s3.explorer.S3TimeOrderPrefixFileExplorer;
-import org.embulk.spi.BufferAllocator;
+import org.embulk.spi.DataException;
 import org.embulk.spi.Exec;
 import org.embulk.spi.FileInputPlugin;
 import org.embulk.spi.TransactionalFileInput;
@@ -52,8 +52,15 @@ import org.embulk.util.retryhelper.RetryExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -314,9 +321,57 @@ public abstract class AbstractS3FileInputPlugin
             }
 
             LOGGER.info("Found total [{}] files", builder.size());
-            return builder.build();
-        }
-        catch (AmazonServiceException ex) {
+
+            final FileList fileList = builder.build();
+            final List<String> strings = fileList.get(0);
+
+            FileList.Builder builder1 = new FileList.Builder(task);
+
+            try {
+                LOGGER.info("Start to download and split file to 8 parts");
+
+                final GetObjectRequest getObjectRequest = new GetObjectRequest(task.getBucket(), strings.get(0));
+                final S3Object object = client.getObject(getObjectRequest);
+                InputStream reader = new BufferedInputStream(
+                        object.getObjectContent());
+
+                final long contentLength = object.getObjectMetadata().getContentLength();
+                int totalPart = 8;
+                int part = 0;
+                int partSize = (int) (contentLength / totalPart);
+
+                File file = Exec.getTempFileSpace().createTempFile("s3_part_" + part, "csv");
+                OutputStream writer = new BufferedOutputStream(new FileOutputStream(file));
+                int read = -1;
+                int count = 0;
+                while ((read = reader.read()) != -1) {
+                    writer.write(read);
+                    count++;
+                    if (read == 10 && count >= partSize) { //newline
+                        writer.flush();
+                        writer.close();
+
+                        builder1.add(file.getAbsolutePath(), file.length());
+
+                        part++;
+                        file = Exec.getTempFileSpace().createTempFile("s3_part_" + part, "csv");
+                        writer = new BufferedOutputStream(new FileOutputStream(file));
+                        count = 0;
+                    }
+                }
+
+                writer.flush();
+                writer.close();
+                reader.close();
+
+                builder1.add(file.getAbsolutePath(), file.length());
+            } catch (Exception ex) {
+                throw new DataException("Failed to download file", ex);
+            }
+            LOGGER.info("Finished download and split");
+
+            return builder1.build();
+        } catch (AmazonServiceException ex) {
             if (ex.getErrorType().equals(AmazonServiceException.ErrorType.Client)) {
                 // HTTP 40x errors. auth error, bucket doesn't exist, etc. See AWS document for the full list:
                 // http://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html
@@ -350,7 +405,12 @@ public abstract class AbstractS3FileInputPlugin
     {
         final TaskMapper taskMapper = CONFIG_MAPPER_FACTORY.createTaskMapper();
         final PluginTask task = taskMapper.map(taskSource, getTaskClass());
-        return new S3FileInput(task, taskIndex);
+        try {
+            return new S3FileInput(task, taskIndex);
+        }
+        catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     static class S3InputStreamReopener
@@ -396,9 +456,10 @@ public abstract class AbstractS3FileInputPlugin
             extends InputStreamFileInput
             implements TransactionalFileInput
     {
-        public S3FileInput(PluginTask task, int taskIndex)
+        public S3FileInput(PluginTask task, int taskIndex) throws FileNotFoundException
         {
-            super(Exec.getBufferAllocator(), new SingleFileProvider(task, taskIndex));
+//            super(Exec.getBufferAllocator(), new SingleFileProvider(task, taskIndex));
+            super(Exec.getBufferAllocator(), new FileInputStream(task.getFiles().get(taskIndex).get(0)));
         }
 
         public void abort()
