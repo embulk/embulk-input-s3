@@ -47,7 +47,7 @@ dependencies {
 
     compile "org.embulk:embulk-util-file:0.1.1"
 
-    compile("org.embulk:embulk-util-aws-credentials:0.4.0") {
+    compile("org.embulk:embulk-util-aws-credentials:0.4.1") {
         // They conflict with embulk-core. They are once excluded here,
         // and added explicitly with versions exactly the same with embulk-core:0.10.19.
         exclude group: "com.fasterxml.jackson.core", module: "jackson-annotations"
