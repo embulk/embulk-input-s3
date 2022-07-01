@@ -18,12 +18,12 @@ package org.embulk.input.s3;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.Region;
-import org.embulk.EmbulkTestRuntime;
 import org.embulk.config.ConfigDiff;
 import org.embulk.config.ConfigException;
 import org.embulk.config.ConfigSource;
 import org.embulk.config.TaskReport;
 import org.embulk.config.TaskSource;
+import org.embulk.parser.csv.CsvParserPlugin;
 import org.embulk.spi.Column;
 import org.embulk.spi.ColumnConfig;
 import org.embulk.spi.FileInputRunner;
@@ -34,7 +34,7 @@ import org.embulk.spi.TestPageBuilderReader.MockPageOutput;
 import org.embulk.spi.type.Type;
 import org.embulk.spi.type.Types;
 import org.embulk.spi.util.Pages;
-import org.embulk.parser.csv.CsvParserPlugin;
+import org.embulk.test.TestingEmbulk;
 import org.embulk.util.config.ConfigMapper;
 import org.embulk.util.config.ConfigMapperFactory;
 import org.embulk.util.config.TaskMapper;
@@ -81,8 +81,15 @@ public class TestS3FileInputPlugin
         assumeNotNull(EMBULK_S3_TEST_BUCKET, EMBULK_S3_TEST_ACCESS_KEY_ID, EMBULK_S3_TEST_SECRET_ACCESS_KEY);
     }
 
+    // TODO: Look further in embulk-input-sftp's tests.
     @Rule
-    public EmbulkTestRuntime runtime = new EmbulkTestRuntime();
+    public TestingEmbulk embulk = TestingEmbulk.builder()
+            .setEmbulkSystemProperties(EMBULK_SYSTEM_PROPERTIES)
+            // .registerPlugin(FormatterPlugin.class, "csv", CsvFormatterPlugin.class)
+            .registerPlugin(FileInputPlugin.class, "s3", S3FileInputPlugin.class)
+            // .registerPlugin(FileOutputPlugin.class, "file", LocalFileOutputPlugin.class)
+            .registerPlugin(ParserPlugin.class, "csv", CsvParserPlugin.class)
+            .build();
 
     private ConfigSource config;
     private Schema configSchema;
