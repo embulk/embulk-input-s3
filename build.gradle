@@ -4,159 +4,263 @@ plugins {
     id "signing"
     id "jacoco"
     id "checkstyle"
-    id "org.embulk.embulk-plugins" version "0.4.2" apply false
+    id "org.embulk.embulk-plugins" version "0.4.2"
+}
+
+repositories {
+    mavenCentral()
+    jcenter()
 }
 
 group = "org.embulk"
 version = "0.6.0-SNAPSHOT"
+description = "Reads files stored on Amazon S3"
 
-subprojects {
-    apply plugin: "java"
-    apply plugin: "maven-publish"
-    apply plugin: "signing"
-    apply plugin: "jacoco"
-    apply plugin: "org.embulk.embulk-plugins"
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
-    sourceCompatibility = 1.8
-    targetCompatibility = 1.8
+tasks.withType(JavaCompile) {
+    options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
+    options.encoding = "UTF-8"
+}
 
-    tasks.withType(JavaCompile) {
-        options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
-        options.encoding = "UTF-8"
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+dependencies {
+    compileOnly "org.embulk:embulk-api:0.10.19"
+    compileOnly "org.embulk:embulk-spi:0.10.19"
+
+    compile("com.amazonaws:aws-java-sdk-s3:1.11.466") {
+        // They conflict with embulk-core. They are once excluded here,
+        // and added explicitly with versions exactly the same with embulk-core:0.10.19.
+        exclude group: "com.fasterxml.jackson.core", module: "jackson-annotations"
+        exclude group: "com.fasterxml.jackson.core", module: "jackson-core"
+        exclude group: "com.fasterxml.jackson.core", module: "jackson-databind"
+        exclude group: "joda-time", module: "joda-time"
+
+        // commons-logging api is provided by jcl-over-slf4j below.
+        exclude group: "commons-logging", module: "commons-logging"
     }
 
-    java {
-        withJavadocJar()
-        withSourcesJar()
+    compile("com.amazonaws:aws-java-sdk-sts:1.11.466") {
+        // They conflict with embulk-core. They are once excluded here,
+        // and added explicitly with versions exactly the same with embulk-core:0.10.19.
+        exclude group: "com.fasterxml.jackson.core", module: "jackson-annotations"
+        exclude group: "com.fasterxml.jackson.core", module: "jackson-core"
+        exclude group: "com.fasterxml.jackson.core", module: "jackson-databind"
+        exclude group: "joda-time", module: "joda-time"
+
+        // commons-logging api is provided by jcl-over-slf4j below.
+        exclude group: "commons-logging", module: "commons-logging"
     }
 
-    test {
-        testLogging {
-            outputs.upToDateWhen { false }
-            showStandardStreams = true
-        }
+    compile("org.slf4j:jcl-over-slf4j:1.7.12") {
+        // commons-logging api is provided by jcl-over-slf4j below.
+        exclude group: "commons-logging", module: "commons-logging"
+
+        // slf4j-api conflicts with embulk-api. It should be excluded.
+        exclude group: "org.slf4j", module: "slf4j-api"
     }
 
-    jar {
-        from rootProject.file("LICENSE")
+    compile "org.embulk:embulk-util-retryhelper:0.8.1"
+
+    compile "org.embulk:embulk-util-file:0.1.1"
+
+    compile("org.embulk:embulk-util-aws-credentials:0.4.1") {
+        // They conflict with embulk-core. They are once excluded here,
+        // and added explicitly with versions exactly the same with embulk-core:0.10.19.
+        exclude group: "com.fasterxml.jackson.core", module: "jackson-annotations"
+        exclude group: "com.fasterxml.jackson.core", module: "jackson-core"
+        exclude group: "com.fasterxml.jackson.core", module: "jackson-databind"
+        exclude group: "com.fasterxml.jackson.datatype", module: "jackson-datatype-jdk8"
+        exclude group: "javax.validation", module: "validation-api"
+        exclude group: "joda-time", module: "joda-time"
     }
 
-    sourcesJar {
-        from rootProject.file("LICENSE")
+    compile("org.embulk:embulk-util-config:0.2.1") {
+        // They conflict with embulk-core. They are once excluded here,
+        // and added explicitly with versions exactly the same with embulk-core:0.10.19.
+        exclude group: "com.fasterxml.jackson.core", module: "jackson-annotations"
+        exclude group: "com.fasterxml.jackson.core", module: "jackson-core"
+        exclude group: "com.fasterxml.jackson.core", module: "jackson-databind"
+        exclude group: "com.fasterxml.jackson.datatype", module: "jackson-datatype-jdk8"
+        exclude group: "javax.validation", module: "validation-api"
     }
 
-    javadocJar {
-        from rootProject.file("LICENSE")
-    }
+    // They are once excluded from transitive dependencies of other dependencies,
+    // and added explicitly with versions exactly the same with embulk-core:0.10.19.
+    compile "com.fasterxml.jackson.core:jackson-annotations:2.6.7"
+    compile "com.fasterxml.jackson.core:jackson-core:2.6.7"
+    compile "com.fasterxml.jackson.core:jackson-databind:2.6.7"
+    compile "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.6.7"
+    compile "javax.validation:validation-api:1.1.0.Final"
+    compile "joda-time:joda-time:2.9.2"
 
-    publishing {
-        publications {
-             maven(MavenPublication) {
-                afterEvaluate { project ->
-                    groupId = "${project.group}"
-                    artifactId = "${project.name}"
+    testCompile "junit:junit:4.13"
+    testCompile "org.mockito:mockito-core:1.10.19"
+    testCompile "org.embulk:embulk-api:0.10.19"
+    testCompile "org.embulk:embulk-spi:0.10.19"
+    testCompile "org.embulk:embulk-core:0.10.19"
+    testCompile "org.embulk:embulk-core:0.10.19:tests"
+    testCompile "org.embulk:embulk-deps:0.10.19"
+    testCompile "org.embulk:embulk-standards:0.10.19"
+}
+
+embulkPlugin {
+    mainClass = "org.embulk.input.s3.S3FileInputPlugin"
+    category = "input"
+    type = "s3"
+}
+
+jar {
+    from rootProject.file("LICENSE")
+}
+
+sourcesJar {
+    from rootProject.file("LICENSE")
+}
+
+javadocJar {
+    from rootProject.file("LICENSE")
+}
+
+publishing {
+    publications {
+         maven(MavenPublication) {
+            groupId = project.group
+            artifactId = project.name
+
+             from components.java
+             // javadocJar and sourcesJar are added by java.withJavadocJar() and java.withSourcesJar() above.
+             // See: https://docs.gradle.org/current/javadoc/org/gradle/api/plugins/JavaPluginExtension.html
+
+            pom {  // https://central.sonatype.org/pages/requirements.html
+                packaging "jar"
+
+                name = project.name
+                description = project.description
+                url = "https://www.embulk.org/"
+
+                licenses {
+                    license {
+                        // http://central.sonatype.org/pages/requirements.html#license-information
+                        name = "The Apache License, Version 2.0"
+                        url = "https://www.apache.org/licenses/LICENSE-2.0.txt"
+                    }
                 }
 
-                 from components.java
-                 // javadocJar and sourcesJar are added by java.withJavadocJar() and java.withSourcesJar() above.
-                 // See: https://docs.gradle.org/current/javadoc/org/gradle/api/plugins/JavaPluginExtension.html
-
-                pom {  // https://central.sonatype.org/pages/requirements.html
-                    packaging "jar"
-
-                    afterEvaluate { project ->
-                        name = "${project.name}"
-                        description = "${project.description}"
+                developers {
+                    developer {
+                        name = "Sadayuki Furuhashi"
+                        email = "frsyuki@gmail.com"
                     }
-                    url = "https://www.embulk.org/"
-
-                    licenses {
-                        license {
-                            // http://central.sonatype.org/pages/requirements.html#license-information
-                            name = "The Apache License, Version 2.0"
-                            url = "https://www.apache.org/licenses/LICENSE-2.0.txt"
-                        }
+                    developer {
+                        name = "Muga Nishizawa"
+                        email = "muga.nishizawa@gmail.com"
                     }
-
-                    developers {
-                        developer {
-                            name = "Sadayuki Furuhashi"
-                            email = "frsyuki@gmail.com"
-                        }
-                        developer {
-                            name = "Muga Nishizawa"
-                            email = "muga.nishizawa@gmail.com"
-                        }
-                        developer {
-                            name = "Huy Le"
-                            email = "huy.lenq@gmail.com"
-                        }
-                        developer {
-                            name = "Satoshi Akama"
-                            email = "satoshiakama@gmail.com"
-                        }
-                        developer {
-                            name = "Trung Huynh"
-                            email = "httrung90@gmail.com"
-                        }
-                        developer {
-                            name = "Serhii Himadieiev"
-                            email = "gimadeevsv@gmail.com"
-                        }
-                        developer {
-                            name = "Dai MIKURUBE"
-                            email = "dmikurube@treasure-data.com"
-                        }
+                    developer {
+                        name = "Huy Le"
+                        email = "huy.lenq@gmail.com"
                     }
-
-                    scm {
-                        connection = "scm:git:git://github.com/embulk/embulk-input-s3.git"
-                        developerConnection = "scm:git:git@github.com:embulk/embulk-input-s3.git"
-                        url = "https://github.com/embulk/embulk-input-s3"
+                    developer {
+                        name = "Satoshi Akama"
+                        email = "satoshiakama@gmail.com"
                     }
+                    developer {
+                        name = "Trung Huynh"
+                        email = "httrung90@gmail.com"
+                    }
+                    developer {
+                        name = "Serhii Himadieiev"
+                        email = "gimadeevsv@gmail.com"
+                    }
+                    developer {
+                        name = "Dai MIKURUBE"
+                        email = "dmikurube@treasure-data.com"
+                    }
+                }
+
+                scm {
+                    connection = "scm:git:git://github.com/embulk/embulk-input-s3.git"
+                    developerConnection = "scm:git:git@github.com:embulk/embulk-input-s3.git"
+                    url = "https://github.com/embulk/embulk-input-s3"
                 }
             }
         }
+    }
 
-        repositories {
-            maven {  // publishMavenPublicationToMavenCentralRepository
-                name = "mavenCentral"
-                if (project.version.endsWith("-SNAPSHOT")) {
-                    url "https://oss.sonatype.org/content/repositories/snapshots"
-                } else {
-                    url "https://oss.sonatype.org/service/local/staging/deploy/maven2"
-                }
+    repositories {
+        maven {  // publishMavenPublicationToMavenCentralRepository
+            name = "mavenCentral"
+            if (project.version.endsWith("-SNAPSHOT")) {
+                url "https://oss.sonatype.org/content/repositories/snapshots"
+            } else {
+                url "https://oss.sonatype.org/service/local/staging/deploy/maven2"
+            }
 
-                credentials {
-                    username = project.hasProperty("ossrhUsername") ? ossrhUsername : ""
-                    password = project.hasProperty("ossrhPassword") ? ossrhPassword : ""
-                }
+            credentials {
+                username = project.hasProperty("ossrhUsername") ? ossrhUsername : ""
+                password = project.hasProperty("ossrhPassword") ? ossrhPassword : ""
             }
         }
     }
+}
 
-    signing {
-        sign publishing.publications.maven
-    }
+signing {
+    sign publishing.publications.maven
+}
 
-    gemPush {
-        host = "https://rubygems.org"
-    }
+gem {
+    authors = [
+        "Sadayuki Furuhashi",
+        "Muga Nishizawa",
+        "Huy Le",
+        "Satoshi Akama",
+        "Trung Huynh",
+        "Serhii Himadieiev",
+        "Dai MIKURUBE",
+    ]
+    email = [
+        "frsyuki@gmail.com",
+        "muga.nishizawa@gmail.com",
+        "huy.lenq@gmail.com",
+        "satoshiakama@gmail.com",
+        "httrung90@gmail.com",
+        "gimadeevsv@gmail.com",
+        "dmikurube@treasure-data.com",
+    ]
+    summary = "S3 file input plugin for Embulk"
+    homepage = "https://github.com/embulk/embulk-input-s3"
+    licenses = [ "Apache-2.0" ]
+}
 
-    checkstyle {
-        configFile = file("${project.rootDir}/config/checkstyle/checkstyle.xml")
-        toolVersion = '6.14.1'
+gemPush {
+    host = "https://rubygems.org"
+}
+
+test {
+    testLogging {
+        outputs.upToDateWhen { false }
+        showStandardStreams = true
     }
-    checkstyleMain {
-        configFile = file("${project.rootDir}/config/checkstyle/default.xml")
-        ignoreFailures = true
-    }
-    checkstyleTest {
-        configFile = file("${project.rootDir}/config/checkstyle/default.xml")
-        ignoreFailures = true
-    }
-    task checkstyle(type: Checkstyle) {
-        classpath = sourceSets.main.output + sourceSets.test.output
-        source = sourceSets.main.allJava + sourceSets.test.allJava
-    }
+}
+
+checkstyle {
+    configFile = file("${project.rootDir}/config/checkstyle/checkstyle.xml")
+    toolVersion = '6.14.1'
+}
+checkstyleMain {
+    configFile = file("${project.rootDir}/config/checkstyle/default.xml")
+    ignoreFailures = true
+}
+checkstyleTest {
+    configFile = file("${project.rootDir}/config/checkstyle/default.xml")
+    ignoreFailures = true
+}
+task checkstyle(type: Checkstyle) {
+    classpath = sourceSets.main.output + sourceSets.test.output
+    source = sourceSets.main.allJava + sourceSets.test.allJava
 }

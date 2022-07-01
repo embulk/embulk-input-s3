@@ -1,3 +1,1 @@
-rootProject.name = 'embulk-input-s3'
-include 'embulk-input-s3'
-include 'embulk-input-riak_cs'
+rootProject.name = "embulk-input-s3"
