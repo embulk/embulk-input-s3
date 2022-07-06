@@ -20,6 +20,7 @@ import com.amazonaws.AmazonServiceException;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.Protocol;
 import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
 import com.amazonaws.retry.PredefinedRetryPolicies;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
@@ -61,15 +62,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
-import static java.lang.String.format;
-
-public abstract class AbstractS3FileInputPlugin
+public class S3FileInputPlugin
         implements FileInputPlugin
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(S3FileInputPlugin.class);
-    private static final String FULL_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
-    private static final ConfigMapperFactory CONFIG_MAPPER_FACTORY = ConfigMapperFactory.builder().addDefaultModules().build();
-
     public interface PluginTask
             extends AwsCredentialsTask, FileList.Task, RetrySupportPluginTask, Task
     {
@@ -95,7 +90,6 @@ public abstract class AbstractS3FileInputPlugin
         @Config("http_proxy")
         @ConfigDefault("null")
         Optional<HttpProxy> getHttpProxy();
-
         void setHttpProxy(Optional<HttpProxy> httpProxy);
 
         @Config("incremental")
@@ -121,7 +115,6 @@ public abstract class AbstractS3FileInputPlugin
         ////////////////////////////////////////
 
         FileList getFiles();
-
         void setFiles(FileList files);
 
         /**
@@ -132,17 +125,22 @@ public abstract class AbstractS3FileInputPlugin
         @Config("__end_modified_time")
         @ConfigDefault("null")
         Optional<Date> getEndModifiedTime();
-
         void setEndModifiedTime(Optional<Date> endModifiedTime);
-    }
 
-    protected abstract Class<? extends PluginTask> getTaskClass();
+        @Config("endpoint")
+        @ConfigDefault("null")
+        Optional<String> getEndpoint();
+
+        @Config("region")
+        @ConfigDefault("null")
+        Optional<String> getRegion();
+    }
 
     @Override
     public ConfigDiff transaction(ConfigSource config, FileInputPlugin.Control control)
     {
         final ConfigMapper configMapper = CONFIG_MAPPER_FACTORY.createConfigMapper();
-        final PluginTask task = configMapper.map(config, getTaskClass());
+        final PluginTask task = configMapper.map(config, PluginTask.class);
 
         errorIfInternalParamsAreSet(task);
         validateInputTask(task);
@@ -159,7 +157,7 @@ public abstract class AbstractS3FileInputPlugin
                              FileInputPlugin.Control control)
     {
         final TaskMapper taskMapper = CONFIG_MAPPER_FACTORY.createTaskMapper();
-        final PluginTask task = taskMapper.map(taskSource, getTaskClass());
+        final PluginTask task = taskMapper.map(taskSource, PluginTask.class);
 
         // validate task
         newS3Client(task);
@@ -177,7 +175,7 @@ public abstract class AbstractS3FileInputPlugin
             }
             else {
                 Optional<String> lastPath = task.getFiles().getLastPath(task.getLastPath());
-                LOGGER.info("Incremental job, setting last_path to [{}]", lastPath.orElse(""));
+                logger.info("Incremental job, setting last_path to [{}]", lastPath.orElse(""));
                 configDiff.set("last_path", lastPath);
             }
         }
@@ -192,38 +190,20 @@ public abstract class AbstractS3FileInputPlugin
         // do nothing
     }
 
-    /**
-     * Provide an overridable default client.
-     * Since this returns an immutable object, it is not for any further customizations by mutating,
-     * e.g., {@link AmazonS3#setEndpoint} will throw a runtime {@link UnsupportedOperationException}
-     * Subclass's customization should be done through {@link AbstractS3FileInputPlugin#defaultS3ClientBuilder}.
-     * @param task Embulk plugin task
-     * @return AmazonS3
-     */
-    protected AmazonS3 newS3Client(PluginTask task)
+    @Override
+    public TransactionalFileInput open(TaskSource taskSource, int taskIndex)
     {
-        return defaultS3ClientBuilder(task).build();
+        final TaskMapper taskMapper = CONFIG_MAPPER_FACTORY.createTaskMapper();
+        final PluginTask task = taskMapper.map(taskSource, PluginTask.class);
+        return new S3FileInput(task, taskIndex);
     }
 
-    /**
-     * A base builder for the subclasses to then customize.builder
-     * @param task Embulk plugin
-     * @return AmazonS3 client b
-     **/
-    protected AmazonS3ClientBuilder defaultS3ClientBuilder(PluginTask task)
-    {
-        return AmazonS3ClientBuilder
-                .standard()
-                .withCredentials(getCredentialsProvider(task))
-                .withClientConfiguration(getClientConfiguration(task));
-    }
-
-    protected AWSCredentialsProvider getCredentialsProvider(PluginTask task)
+    private AWSCredentialsProvider getCredentialsProvider(PluginTask task)
     {
         return AwsCredentials.getAWSCredentialsProvider(task);
     }
 
-    protected ClientConfiguration getClientConfiguration(PluginTask task)
+    private ClientConfiguration getClientConfiguration(PluginTask task)
     {
         ClientConfiguration clientConfig = new ClientConfiguration();
 
@@ -287,15 +267,15 @@ public abstract class AbstractS3FileInputPlugin
             RetryExecutor retryExec = retryExecutorFrom(task);
 
             if (task.getPath().isPresent()) {
-                LOGGER.info("Start getting object with path: [{}]", task.getPath().get());
+                logger.info("Start getting object with path: [{}]", task.getPath().get());
                 new S3SingleFileExplorer(bucketName, client, retryExec, task.getPath().get()).addToBuilder(builder);
                 return builder.build();
             }
 
             // does not need to verify existent path prefix here since there is the validation requires either path or path_prefix
-            LOGGER.info("Start listing file with prefix [{}]", task.getPathPrefix().get());
+            logger.info("Start listing file with prefix [{}]", task.getPathPrefix().get());
             if (task.getPathPrefix().get().equals("/")) {
-                LOGGER.info("Listing files with prefix \"/\". This doesn't mean all files in a bucket. If you intend to read all files, use \"path_prefix: ''\" (empty string) instead.");
+                logger.info("Listing files with prefix \"/\". This doesn't mean all files in a bucket. If you intend to read all files, use \"path_prefix: ''\" (empty string) instead.");
             }
 
             if (task.getUseModifiedTime()) {
@@ -313,7 +293,7 @@ public abstract class AbstractS3FileInputPlugin
                         task.getSkipGlacierObjects(), task.getLastPath().orElse(null)).addToBuilder(builder);
             }
 
-            LOGGER.info("Found total [{}] files", builder.size());
+            logger.info("Found total [{}] files", builder.size());
             return builder.build();
         }
         catch (AmazonServiceException ex) {
@@ -345,14 +325,6 @@ public abstract class AbstractS3FileInputPlugin
         }
     }
 
-    @Override
-    public TransactionalFileInput open(TaskSource taskSource, int taskIndex)
-    {
-        final TaskMapper taskMapper = CONFIG_MAPPER_FACTORY.createTaskMapper();
-        final PluginTask task = taskMapper.map(taskSource, getTaskClass());
-        return new S3FileInput(task, taskIndex);
-    }
-
     static class S3InputStreamReopener
             implements ResumableInputStream.Reopener
     {
@@ -379,10 +351,10 @@ public abstract class AbstractS3FileInputPlugin
         @Override
         public InputStream reopen(final long offset, final Exception closedCause) throws IOException
         {
-            log.warn(format("S3 read failed. Retrying GET request with %,d bytes offset", offset), closedCause);
+            log.warn(String.format("S3 read failed. Retrying GET request with %,d bytes offset", offset), closedCause);
             request.setRange(offset, contentLength - 1);  // [first, last]
 
-            return new DefaultRetryable<S3ObjectInputStream>(format("Getting object '%s'", request.getKey())) {
+            return new DefaultRetryable<S3ObjectInputStream>(String.format("Getting object '%s'", request.getKey())) {
                 @Override
                 public S3ObjectInputStream call()
                 {
@@ -449,7 +421,7 @@ public abstract class AbstractS3FileInputPlugin
             final String key = iterator.next();
             final GetObjectRequest request = new GetObjectRequest(bucket, key);
 
-            S3Object object = new DefaultRetryable<S3Object>(format("Getting object '%s'", request.getKey())) {
+            S3Object object = new DefaultRetryable<S3Object>(String.format("Getting object '%s'", request.getKey())) {
                 @Override
                 public S3Object call()
                 {
@@ -460,7 +432,7 @@ public abstract class AbstractS3FileInputPlugin
             long objectSize = object.getObjectMetadata().getContentLength();
             // Some plugin users are parsing this output to get file list.
             // Keep it for now but might be removed in the future.
-            LOGGER.info("Open S3Object with bucket [{}], key [{}], with size [{}]", bucket, key, objectSize);
+            logger.info("Open S3Object with bucket [{}], key [{}], with size [{}]", bucket, key, objectSize);
             InputStream inputStream = new ResumableInputStream(object.getObjectContent(), new S3InputStreamReopener(client, request, objectSize, retryExec));
             return new InputStreamFileInput.InputStreamWithHints(inputStream, String.format("s3://%s/%s", bucket, key));
         }
@@ -470,4 +442,56 @@ public abstract class AbstractS3FileInputPlugin
         {
         }
     }
+
+    private AmazonS3 newS3Client(final PluginTask task)
+    {
+        Optional<String> endpoint = task.getEndpoint();
+        Optional<String> region = task.getRegion();
+
+        final AmazonS3ClientBuilder builder = AmazonS3ClientBuilder
+                .standard()
+                .withCredentials(getCredentialsProvider(task))
+                .withClientConfiguration(getClientConfiguration(task));
+
+        // Favor the `endpoint` configuration, then `region`, if both are absent then `s3.amazonaws.com` will be used.
+        if (endpoint.isPresent()) {
+            if (region.isPresent()) {
+                logger.warn("Either configure endpoint or region, " +
+                        "if both is specified only the endpoint will be in effect.");
+            }
+            builder.setEndpointConfiguration(new EndpointConfiguration(endpoint.get(), null));
+        }
+        else if (region.isPresent()) {
+            builder.setRegion(region.get());
+        }
+        else {
+            // This is to keep the AWS SDK upgrading to 1.11.x to be backward compatible with old configuration.
+            //
+            // On SDK 1.10.x, when neither endpoint nor region is set explicitly, the client's endpoint will be by
+            // default `s3.amazonaws.com`. And for pre-Signature-V4, this will work fine as the bucket's region
+            // will be resolved to the appropriate region on server (AWS) side.
+            //
+            // On SDK 1.11.x, a region will be computed on client side by AwsRegionProvider and the endpoint now will
+            // be region-specific `<region>.s3.amazonaws.com` and might be the wrong one.
+            //
+            // So a default endpoint of `s3.amazonaws.com` when both endpoint and region configs are absent are
+            // necessary to make old configurations won't suddenly break. The side effect is that this will render
+            // AwsRegionProvider useless. And it's worth to note that Signature-V4 won't work with either versions with
+            // no explicit region or endpoint as the region (inferrable from endpoint) are necessary for signing.
+            builder.setEndpointConfiguration(new EndpointConfiguration("s3.amazonaws.com", null));
+        }
+
+        return builder.build();
+    }
+
+    AmazonS3 newS3ClientForTesting(final PluginTask task)
+    {
+        return this.newS3Client(task);
+    }
+
+    private static final Logger logger = LoggerFactory.getLogger(S3FileInputPlugin.class);
+
+    private static final String FULL_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
+
+    private static final ConfigMapperFactory CONFIG_MAPPER_FACTORY = ConfigMapperFactory.builder().addDefaultModules().build();
 }

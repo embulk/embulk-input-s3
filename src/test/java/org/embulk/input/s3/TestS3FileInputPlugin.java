@@ -51,7 +51,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.embulk.input.s3.S3FileInputPlugin.S3PluginTask;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -206,9 +205,9 @@ public class TestS3FileInputPlugin
         final ConfigSource configSource = config.deepCopy()
                 .set("endpoint", "s3-ap-southeast-1.amazonaws.com")
                 .set("region", "ap-southeast-2");
-        final S3PluginTask task = configMapper.map(configSource, S3PluginTask.class);
+        final S3FileInputPlugin.PluginTask task = configMapper.map(configSource, S3FileInputPlugin.PluginTask.class);
         S3FileInputPlugin plugin = runtime.getInstance(S3FileInputPlugin.class);
-        AmazonS3 s3Client = plugin.newS3Client(task);
+        final AmazonS3 s3Client = plugin.newS3ClientForTesting(task);
 
         // Should not crash and favor the endpoint over the region configuration (there's a warning log though)
         assertEquals(s3Client.getRegion(), Region.AP_Singapore);
@@ -221,9 +220,9 @@ public class TestS3FileInputPlugin
         final ConfigSource configSource = config.deepCopy()
                 .set("region", "ap-southeast-2")
                 .remove("endpoint");
-        final S3PluginTask task = configMapper.map(configSource, S3PluginTask.class);
+        final S3FileInputPlugin.PluginTask task = configMapper.map(configSource, S3FileInputPlugin.PluginTask.class);
         S3FileInputPlugin plugin = runtime.getInstance(S3FileInputPlugin.class);
-        AmazonS3 s3Client = plugin.newS3Client(task);
+        final AmazonS3 s3Client = plugin.newS3ClientForTesting(task);
 
         // Should reflect the region configuration as is
         assertEquals(s3Client.getRegion(), Region.AP_Sydney);
@@ -236,9 +235,9 @@ public class TestS3FileInputPlugin
         final ConfigSource configSource = config.deepCopy()
                 .remove("endpoint")
                 .remove("region");
-        final S3PluginTask task = configMapper.map(configSource, S3PluginTask.class);
+        final S3FileInputPlugin.PluginTask task = configMapper.map(configSource, S3FileInputPlugin.PluginTask.class);
         S3FileInputPlugin plugin = runtime.getInstance(S3FileInputPlugin.class);
-        AmazonS3 s3Client = plugin.newS3Client(task);
+        final AmazonS3 s3Client = plugin.newS3ClientForTesting(task);
 
         // US Standard region is a 'generic' one (s3.amazonaws.com), the expectation here that
         // the S3 client should not eagerly resolves for a specific region on client side.
