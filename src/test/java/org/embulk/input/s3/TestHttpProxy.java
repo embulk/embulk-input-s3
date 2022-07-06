@@ -18,7 +18,6 @@ package org.embulk.input.s3;
 
 import org.embulk.EmbulkTestRuntime;
 import org.embulk.config.ConfigSource;
-import org.embulk.input.s3.S3FileInputPlugin.S3PluginTask;
 import org.embulk.util.config.ConfigMapper;
 import org.embulk.util.config.ConfigMapperFactory;
 import org.embulk.util.config.TaskMapper;
@@ -51,7 +50,7 @@ public class TestHttpProxy
         ConfigSource conf = config.deepCopy();
         setupS3Config(conf);
         final ConfigMapper configMapper = CONFIG_MAPPER_FACTORY.createConfigMapper();
-        final S3PluginTask task = configMapper.map(config, S3PluginTask.class);
+        final S3FileInputPlugin.PluginTask task = configMapper.map(config, S3FileInputPlugin.PluginTask.class);
         assertTrue(!task.getHttpProxy().isPresent());
     }
 

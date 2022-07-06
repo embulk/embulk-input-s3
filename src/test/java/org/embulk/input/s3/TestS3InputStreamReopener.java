@@ -23,7 +23,6 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import org.embulk.EmbulkTestRuntime;
-import org.embulk.input.s3.AbstractS3FileInputPlugin.S3InputStreamReopener;
 import org.embulk.util.retryhelper.RetryExecutor;
 import org.junit.Before;
 import org.junit.Rule;
@@ -63,7 +62,8 @@ public class TestS3InputStreamReopener
         { // not retry
             doReturn(s3object("in/aa/a", content)).when(client).getObject(any(GetObjectRequest.class));
 
-            S3InputStreamReopener opener = new S3InputStreamReopener(client, new GetObjectRequest("my_bucket", "in/aa/a"), content.length());
+            final S3FileInputPlugin.S3InputStreamReopener opener = new S3FileInputPlugin.S3InputStreamReopener(
+                    client, new GetObjectRequest("my_bucket", "in/aa/a"), content.length());
 
             try (InputStream in = opener.reopen(0, new RuntimeException())) {
                 BufferedReader r = new BufferedReader(new InputStreamReader(in));
@@ -74,7 +74,7 @@ public class TestS3InputStreamReopener
         { // retry once
             doThrow(new RuntimeException()).doReturn(s3object("in/aa/a", content)).when(client).getObject(any(GetObjectRequest.class));
 
-            S3InputStreamReopener opener = new S3InputStreamReopener(
+            final S3FileInputPlugin.S3InputStreamReopener opener = new S3FileInputPlugin.S3InputStreamReopener(
                     client,
                     new GetObjectRequest("my_bucket", "in/aa/a"),
                     content.length(),
@@ -96,7 +96,7 @@ public class TestS3InputStreamReopener
         String content = "value";
         doThrow(new AmazonClientException("no")).doReturn(s3object("in/aa/a", content)).when(client).getObject(any(GetObjectRequest.class));
 
-        S3InputStreamReopener opener = new S3InputStreamReopener(
+        final S3FileInputPlugin.S3InputStreamReopener opener = new S3FileInputPlugin.S3InputStreamReopener(
                 client,
                 new GetObjectRequest("my_bucket", "in/aa/a"),
                 content.length(),
@@ -114,7 +114,7 @@ public class TestS3InputStreamReopener
     {
         // always failed call with 2 retries
         doThrow(new AmazonClientException("This exception is thrown when retrying.")).when(client).getObject(any(GetObjectRequest.class));
-        S3InputStreamReopener opener = new S3InputStreamReopener(
+        final S3FileInputPlugin.S3InputStreamReopener opener = new S3FileInputPlugin.S3InputStreamReopener(
                 client,
                 new GetObjectRequest("my_bucket", "in/aa/a"),
                 "value".length(),
