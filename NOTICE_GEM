@@ -1,0 +1,125 @@
+embulk-input-s3
+Copyright 2015-2022 The Embulk project
+
+This product includes software developed at
+The Embulk project (https://www.embulk.org/).
+
+
+The RubyGems distribution of this product bundles products of
+the Jackson project, as-is.
+They are licensed under the Apache Software License, Version 2.0.
+See: https://github.com/FasterXML/jackson
+
+
+The RubyGems distribution of this product bundles products of
+the Jakarta Bean Validation API 1.1, as-is.
+They are licensed under the Apache Software License, Version 2.0.
+See: https://beanvalidation.org/1.1/
+
+
+The RubyGems distribution of this product includes products of
+AWS SDK for Java, as-is.
+They are licensed under the Apache Software License, Version 2.0.
+See: https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/welcome.html
+
+---------------- NOTICE.txt of AWS SDK for Java ----------------
+AWS SDK for Java
+Copyright 2010-2014 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+
+This product includes software developed by
+Amazon Technologies, Inc (http://www.amazon.com/).
+
+**********************
+THIRD PARTY COMPONENTS
+**********************
+This software includes third party software subject to the following copyrights:
+- XML parsing and utility functions from JetS3t - Copyright 2006-2009 James Murty.
+- PKCS#1 PEM encoded private key parsing and utility functions from oauth.googlecode.com - Copyright 1998-2010 AOL Inc.
+
+The licenses for these third party components are included in LICENSE.txt
+---------------- NOTICE.txt of AWS SDK for Java ----------------
+
+
+The RubyGems distribution of this product includes products of
+Amazon Ion Java, as-is.
+They are licensed under the Apache Software License, Version 2.0.
+See: https://github.com/amzn/ion-java
+
+---------------- NOTICE of Amazon Ion Java ----------------
+Amazon Ion Java
+Copyright 2007-2016 Amazon.com, Inc. or its affiliates. All Rights Reserved. 
+---------------- NOTICE of Amazon Ion Java ----------------
+
+
+The RubyGems distribution of this product includes products of
+the Apache HttpComponents Client, as-is.
+They are licensed under the Apache Software License, Version 2.0.
+See: https://hc.apache.org/httpcomponents-client-4.5.x/index.html
+
+---------------- NOTICE.txt of Apache HttpComponents Client ----------------
+Apache HttpComponents Client
+Copyright 1999-2018 The Apache Software Foundation
+
+This product includes software developed at
+The Apache Software Foundation (http://www.apache.org/).
+---------------- NOTICE.txt of Apache HttpComponents Client ----------------
+
+
+The RubyGems distribution of this product includes products of
+the Apache HttpComponents Core, as-is.
+They are licensed under the Apache Software License, Version 2.0.
+See: https://hc.apache.org/httpcomponents-core-4.4.x/index.html
+
+---------------- NOTICE.txt of Apache HttpComponents Core ----------------
+Apache HttpComponents Core
+Copyright 2005-2017 The Apache Software Foundation
+
+This product includes software developed at
+The Apache Software Foundation (http://www.apache.org/).
+---------------- NOTICE.txt of Apache HttpComponents Core ----------------
+
+
+The RubyGems distribution of this product includes products of
+the Apache Commons Codec, as-is.
+They are licensed under the Apache Software License, Version 2.0.
+See: https://commons.apache.org/proper/commons-codec/
+
+---------------- NOTICE.txt of Apache Commons Codec ----------------
+Apache Commons Codec
+Copyright 2002-2014 The Apache Software Foundation
+
+This product includes software developed at
+The Apache Software Foundation (http://www.apache.org/).
+
+src/test/org/apache/commons/codec/language/DoubleMetaphoneTest.java
+contains test data from http://aspell.net/test/orig/batch0.tab.
+Copyright (C) 2002 Kevin Atkinson (kevina@gnu.org)
+
+===============================================================================
+
+The content of package org.apache.commons.codec.language.bm has been translated
+from the original php source code available at http://stevemorse.org/phoneticinfo.htm
+with permission from the original authors.
+Original source copyright:
+Copyright (c) 2008 Alexander Beider & Stephen P. Morse.
+---------------- NOTICE.txt of Apache Commons Codec ----------------
+
+
+The RubyGems distribution of this product includes products of
+Joda-Time, as-is.
+They are licensed under the Apache Software License, Version 2.0.
+See: https://www.joda.org/joda-time/
+
+---------------- NOTICE.txt of Joda-Time ----------------
+=============================================================================
+= NOTICE file corresponding to section 4d of the Apache License Version 2.0 =
+=============================================================================
+This product includes software developed by
+Joda.org (http://www.joda.org/).
+---------------- NOTICE.txt of Joda-Time ----------------
+
+
+The RubyGems distribution of this product includes products of
+JCL 1.1.1 implemented over SLF4J, as-is.
+They are licensed under the Apache Software License, Version 2.0.
+See: https://www.slf4j.org/legacy.html
