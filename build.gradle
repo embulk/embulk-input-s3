@@ -15,8 +15,8 @@ group = "org.embulk"
 version = "0.6.0-SNAPSHOT"
 description = "Reads files stored on Amazon S3"
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
 
 tasks.withType(JavaCompile) {
     options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
@@ -115,15 +115,24 @@ embulkPlugin {
 }
 
 jar {
-    from rootProject.file("LICENSE")
+    metaInf {
+        from rootProject.file("LICENSE")
+        from rootProject.file("NOTICE")
+    }
 }
 
 sourcesJar {
-    from rootProject.file("LICENSE")
+    metaInf {
+        from rootProject.file("LICENSE")
+        from rootProject.file("NOTICE")
+    }
 }
 
 javadocJar {
-    from rootProject.file("LICENSE")
+    metaInf {
+        from rootProject.file("LICENSE")
+        from rootProject.file("NOTICE")
+    }
 }
 
 publishing {
@@ -234,6 +243,10 @@ gem {
     summary = "S3 file input plugin for Embulk"
     homepage = "https://github.com/embulk/embulk-input-s3"
     licenses = [ "Apache-2.0" ]
+
+    from rootProject.file("LICENSE")
+    from rootProject.file("NOTICE_GEM")
+    rename ("NOTICE_GEM", "NOTICE")
 }
 
 gemPush {
