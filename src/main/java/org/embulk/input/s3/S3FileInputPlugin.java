@@ -481,6 +481,7 @@ public class S3FileInputPlugin
             builder.setEndpointConfiguration(new EndpointConfiguration("s3.amazonaws.com", null));
         }
 
+        builder.withForceGlobalBucketAccessEnabled(true);
         return builder.build();
     }
 
