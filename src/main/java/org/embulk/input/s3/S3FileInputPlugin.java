@@ -198,12 +198,12 @@ public class S3FileInputPlugin
         return new S3FileInput(task, taskIndex);
     }
 
-    private AWSCredentialsProvider getCredentialsProvider(PluginTask task)
+    protected AWSCredentialsProvider getCredentialsProvider(PluginTask task)
     {
         return AwsCredentials.getAWSCredentialsProvider(task);
     }
 
-    private ClientConfiguration getClientConfiguration(PluginTask task)
+    protected ClientConfiguration getClientConfiguration(PluginTask task)
     {
         ClientConfiguration clientConfig = new ClientConfiguration();
 
@@ -443,7 +443,7 @@ public class S3FileInputPlugin
         }
     }
 
-    private AmazonS3 newS3Client(final PluginTask task)
+    protected AmazonS3 newS3Client(final PluginTask task)
     {
         Optional<String> endpoint = task.getEndpoint();
         Optional<String> region = task.getRegion();
