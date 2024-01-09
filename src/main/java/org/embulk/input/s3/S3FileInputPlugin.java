@@ -134,6 +134,10 @@ public class S3FileInputPlugin
         @Config("region")
         @ConfigDefault("null")
         Optional<String> getRegion();
+
+        @Config("path_style_access")
+        @ConfigDefault("false")
+        boolean getPathStyleAccess();
     }
 
     @Override
@@ -447,11 +451,13 @@ public class S3FileInputPlugin
     {
         Optional<String> endpoint = task.getEndpoint();
         Optional<String> region = task.getRegion();
+        Boolean pathStyleAccess = task.getPathStyleAccess();
 
         final AmazonS3ClientBuilder builder = AmazonS3ClientBuilder
                 .standard()
                 .withCredentials(getCredentialsProvider(task))
-                .withClientConfiguration(getClientConfiguration(task));
+                .withClientConfiguration(getClientConfiguration(task))
+                .withPathStyleAccessEnabled(pathStyleAccess);
 
         // Favor the `endpoint` configuration, then `region`, if both are absent then `s3.amazonaws.com` will be used.
         if (endpoint.isPresent()) {
